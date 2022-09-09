@@ -412,6 +412,15 @@ private:
   float                JpsiKE_e1_vy       ;
   float                JpsiKE_e1_vz       ;
 
+  float                JpsiKE_e1_trgobj_pt      ;
+  float                JpsiKE_e1_trgobj_eta     ;
+  float                JpsiKE_e1_trgobj_phi     ;
+  float                JpsiKE_e1_trgobj_mass     ;
+  int                  JpsiKE_e1_trgobj_q      ;   
+  float                JpsiKE_e1_trgobj_vx       ;
+  float                JpsiKE_e1_trgobj_vy       ;
+  float                JpsiKE_e1_trgobj_vz       ;
+
   float                JpsiKE_e2_pt      ;
   float                JpsiKE_e2_eta     ;
   float                JpsiKE_e2_phi     ;
@@ -420,6 +429,15 @@ private:
   float                JpsiKE_e2_vx       ;
   float                JpsiKE_e2_vy       ;
   float                JpsiKE_e2_vz       ;
+
+  float                JpsiKE_e2_trgobj_pt      ;
+  float                JpsiKE_e2_trgobj_eta     ;
+  float                JpsiKE_e2_trgobj_phi     ;
+  float                JpsiKE_e2_trgobj_mass     ;
+  int                  JpsiKE_e2_trgobj_q   ;   
+  float                JpsiKE_e2_trgobj_vx       ;
+  float                JpsiKE_e2_trgobj_vy       ;
+  float                JpsiKE_e2_trgobj_vz       ;
 
   float                JpsiKE_PV_vx       ;
   float                JpsiKE_PV_vy       ;
@@ -578,9 +596,8 @@ void
 NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
-
   reset();
-
+  
   iEvent.getByToken(triggerToken_, HLTtriggers_);
 
   run = (iEvent.id()).run();
@@ -596,13 +613,15 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //  std::string finalTriggerFilterObjName="";
 
   //  std::cout << "------------------------------" << std::endl;
-
   for (unsigned int i = 0, n = HLTtriggers_->size(); i < n; ++i) {
     
-    //    std::cout << "trig_name:" <<trigNames.triggerName(i) << std::endl;
+    //std::cout << "trig_name:" <<trigNames.triggerName(i) << std::endl;
+    
 
-    if(trigNames.triggerName(i).find("eta1p22_mMax6")!= std::string::npos){
+    //if(trigNames.triggerName(i).find("eta1p22_mMax6z")!= std::string::npos){
+    if(trigNames.triggerName(i).find("HLT_Ele8_CaloIdM_TrackIdM_PFJet30")!= std::string::npos){
       //      nBranches_->HLT_BPH_isFired[trigNames.triggerName(i)] = HLTtriggers_->accept(i);
+      //std::cout << "HLT_Ele8_CaloIdM_TrackIdM_PFJet30 trigger found" << std::endl;
       if(HLTtriggers_->accept(i)){
 	isTriggered = true;
 	finalTriggerName=trigNames.triggerName(i);  
@@ -616,16 +635,18 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   if(!isTriggered) return; 
   //  nBranches_->cutflow->Fill(1);
+  std::cout << "Run, Event = " << run << ", " << event << std::endl;
 
   hist->Fill(2);
-
 
   iEvent.getByToken(electronToken_	, electrons_    );
   iEvent.getByToken(triggerobjectToken_ , triggerObjects);
   
   std::vector<pat::Electron> electroncollection;
+  std::vector<pat::TriggerObjectStandAlone> trg_obj_collection;
 
   electroncollection.clear();
+  trg_obj_collection.clear();
 
 
   for(size_t ielectron = 0; ielectron < electrons_->size(); ++ ielectron){
@@ -634,18 +655,20 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
     if(electron.pt() < 2.5) continue;
     if(TMath::Abs(electron.eta()) > 2.4) continue;
-    if (!electron.passConversionVeto()) continue;
+    if (!electron.passConversionVeto()) continue; // remove candidate photons
     const reco::GsfTrackRef gsfTrk = electron.gsfTrack();
-    if (electron.electronID("mvaEleID-Fall17-noIso-V2-wpLoose") != 1.0) continue;
+    //if (electron.electronID("mvaEleID-Fall17-noIso-V2-wpLoose") != 1.0) continue; //TBD: to be removed as requested but save variable
 
 
     if(!gsfTrk.isNonnull()) continue;
 
     /// Trigger matching 
 
-
     bool trigMatch = false;
 ////
+    int iobj=0;
+    pat::TriggerObjectStandAlone best_match_obj;
+    Float_t best_match_dR;
     for (pat::TriggerObjectStandAlone obj : *triggerObjects) {
 ////    
       obj.unpackPathNames(trigNames);
@@ -678,32 +701,34 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 ////      
 ////      //      if(TMath::Abs(obj.pdgId()) != 13) continue;
 ////      
-    //  Float_t trigger_dR = reco::deltaR(obj.eta(), obj.phi(),	electron.eta(), electron.phi());
+      Float_t trigger_dR = reco::deltaR(obj.eta(), obj.phi(),	electron.eta(), electron.phi());
       Float_t deltaPhi = TMath::Abs(obj.phi() - electron.superCluster()->phi());
-      Float_t deltaEta = TMath::Abs(obj.phi() - electron.superCluster()->phi());
+      Float_t deltaEta = TMath::Abs(obj.eta() - electron.superCluster()->eta());
+      
       //std::cout<< electron.phi() - electron.superCluster()->phi() <<endl;
-
 ////      
+      std::cout << "EleCand " << ielectron << " dEta = " << deltaEta << "  dPhi = " << deltaPhi << " iObj = " << iobj <<  " obj pT = " << obj.pt() << ", ele pT = " << electron.pt() << " obj id = " << obj.triggerObject().pdgId() << " EleCand pdgId = " << electron.pdgId() << std::endl;
       if(deltaPhi < 0.2 && deltaEta < 0.07){
       	trigMatch = true;
-////	//	std::cout << "Muon" << imuon << " matches to the trigger object dR = " << trigger_dR << ", obj pT = " << obj.pt() << ", muon pT = " << muon.pt() << " " << obj.pdgId() << std::endl;
+	if (trigger_dR < best_match_dR) best_match_obj = obj;
       }
+      iobj++;
     }
 
+    electroncollection.push_back(electron);
     if(!trigMatch) continue;
 
-
-
-
-
-    electroncollection.push_back(electron);
+    trg_obj_collection.push_back(best_match_obj);
   }
 
 
-
-  if(electroncollection.size() < 2) return;
+  //std::cout << electroncollection.size() << std::endl;
+  if(electroncollection.size() < 2) return; 
   hist->Fill(3);
 
+  //TBD save object pt,deta,dphi of best matching object with tag electron (mandatory)
+  //(optional) save also obj of non-tag electrons
+  //add PFAK4 jets matching trigger obj
 
   const TransientTrackBuilder* builder = &iSetup.getData(ttkToken);
 
@@ -920,65 +945,96 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     RefCountedKinematicTree bTree;
     Bool_t bfit_flag;
     std::tie(bfit_flag, b_part, b_vertex, bTree) = aux.KinematicFit(allParticles, -1, -1);
-    if(!bfit_flag){
-      //std::cout <<"The Fit fails ..." << std::endl;
-      continue;
-    }
+    // keep also failed fits
+    // if(!bfit_flag){
+    //   //std::cout <<"The Fit fails ..." << std::endl;
+    //   continue;
+    // }
 
 
     //    if(TMath::Prob(b_vertex->chiSquared(), b_vertex->degreesOfFreedom()) <= 0.05) continue;
         
+    if(bfit_flag){
+      particle_cand Bcand; 
+      Bcand = aux.calculateIPvariables(extrapolator, b_part, b_vertex, closestVertex);
 
 
-    particle_cand Bcand; 
-    Bcand = aux.calculateIPvariables(extrapolator, b_part, b_vertex, closestVertex);
-
-
-    TLorentzVector tlv_k;
-    tlv_k.SetPtEtaPhiM(pf.pt(), pf.eta(), pf.phi(), aux.mass_kaon);
-
+      TLorentzVector tlv_k;
+      tlv_k.SetPtEtaPhiM(pf.pt(), pf.eta(), pf.phi(), aux.mass_kaon);
+    
     
 
 
-    nfilter+=1;
+      nfilter+=1;
 
-    JpsiKE_B_pt.push_back(b_part->currentState().globalMomentum().perp());
-    JpsiKE_B_eta.push_back(b_part->currentState().globalMomentum().eta());
-    JpsiKE_B_phi.push_back(b_part->currentState().globalMomentum().phi());
-    JpsiKE_B_mass.push_back(b_part->currentState().mass());
-    JpsiKE_B_mass_nofit.push_back((tlv_k + jpsi_tlv_highest).M());
-    JpsiKE_B_vprob.push_back( TMath::Prob(b_vertex->chiSquared(), b_vertex->degreesOfFreedom()) ); //b_part->currentState().mass());
-    JpsiKE_B_lip.push_back(Bcand.lip);
-    JpsiKE_B_lips.push_back(Bcand.lips);
-    JpsiKE_B_pvip.push_back(Bcand.pvip);
-    JpsiKE_B_pvips.push_back(Bcand.pvips);
-    JpsiKE_B_fls3d.push_back(Bcand.fls3d);
-    JpsiKE_B_fl3d.push_back(Bcand.fl3d);
-    JpsiKE_B_alpha.push_back(Bcand.alpha);    
-    JpsiKE_B_vx.push_back(b_vertex->vertexState().position().x());
-    JpsiKE_B_vy.push_back(b_vertex->vertexState().position().y());
-    JpsiKE_B_vz.push_back(b_vertex->vertexState().position().z());
+      JpsiKE_B_pt.push_back(b_part->currentState().globalMomentum().perp());
+      JpsiKE_B_eta.push_back(b_part->currentState().globalMomentum().eta());
+      JpsiKE_B_phi.push_back(b_part->currentState().globalMomentum().phi());
+      JpsiKE_B_mass.push_back(b_part->currentState().mass());
+      JpsiKE_B_mass_nofit.push_back((tlv_k + jpsi_tlv_highest).M());
+      JpsiKE_B_vprob.push_back( TMath::Prob(b_vertex->chiSquared(), b_vertex->degreesOfFreedom()) ); //b_part->currentState().mass());
+      JpsiKE_B_lip.push_back(Bcand.lip);
+      JpsiKE_B_lips.push_back(Bcand.lips);
+      JpsiKE_B_pvip.push_back(Bcand.pvip);
+      JpsiKE_B_pvips.push_back(Bcand.pvips);
+      JpsiKE_B_fls3d.push_back(Bcand.fls3d);
+      JpsiKE_B_fl3d.push_back(Bcand.fl3d);
+      JpsiKE_B_alpha.push_back(Bcand.alpha);    
+      JpsiKE_B_vx.push_back(b_vertex->vertexState().position().x());
+      JpsiKE_B_vy.push_back(b_vertex->vertexState().position().y());
+      JpsiKE_B_vz.push_back(b_vertex->vertexState().position().z());
+    
+      JpsiKE_pi_pt.push_back(pf.pt());
+      JpsiKE_pi_eta.push_back(pf.eta());
+      JpsiKE_pi_phi.push_back(pf.phi());
+      JpsiKE_pi_mass.push_back(pf.mass());
+      JpsiKE_pi_q.push_back(pf.charge());
+      JpsiKE_pi_doca3d.push_back(doca3d);
+      JpsiKE_pi_doca3de.push_back(doca3de);
+      JpsiKE_pi_doca2d.push_back(doca2d);
+      JpsiKE_pi_doca2de.push_back(doca2de);
+      JpsiKE_pi_dz.push_back(precut_dz);
+      JpsiKE_pi_near_dz.push_back(near_dz);
+      JpsiKE_pi_isAssociate.push_back(isAssociate);
+      JpsiKE_pi_pvAssociationQuality.push_back(pf.pvAssociationQuality());
+      JpsiKE_pi_pdg.push_back(pf.pdgId());
+    }
+    else{
+      JpsiKE_B_pt.push_back(-999);
+      JpsiKE_B_eta.push_back(-999);
+      JpsiKE_B_phi.push_back(-999);
+      JpsiKE_B_mass.push_back(-999);
+      JpsiKE_B_mass_nofit.push_back(-999);
+      JpsiKE_B_vprob.push_back(-999); //b_part->currentState().mass());
+      JpsiKE_B_lip.push_back(-999);
+      JpsiKE_B_lips.push_back(-999);
+      JpsiKE_B_pvip.push_back(-999);
+      JpsiKE_B_pvips.push_back(-999);
+      JpsiKE_B_fls3d.push_back(-999);
+      JpsiKE_B_fl3d.push_back(-999);
+      JpsiKE_B_alpha.push_back(-999);    
+      JpsiKE_B_vx.push_back(-999);
+      JpsiKE_B_vy.push_back(-999);
+      JpsiKE_B_vz.push_back(-999);
+    
+      JpsiKE_pi_pt.push_back(-999);
+      JpsiKE_pi_eta.push_back(-999);
+      JpsiKE_pi_phi.push_back(-999);
+      JpsiKE_pi_mass.push_back(-999);
+      JpsiKE_pi_q.push_back(-999);
+      JpsiKE_pi_doca3d.push_back(-999);
+      JpsiKE_pi_doca3de.push_back(-999);
+      JpsiKE_pi_doca2d.push_back(-999);
+      JpsiKE_pi_doca2de.push_back(-999);
+      JpsiKE_pi_dz.push_back(-999);
+      JpsiKE_pi_near_dz.push_back(-999);
+      JpsiKE_pi_isAssociate.push_back(-999);
+      JpsiKE_pi_pvAssociationQuality.push_back(-999);
+      JpsiKE_pi_pdg.push_back(-999);
 
-    JpsiKE_pi_pt.push_back(pf.pt());
-    JpsiKE_pi_eta.push_back(pf.eta());
-    JpsiKE_pi_phi.push_back(pf.phi());
-    JpsiKE_pi_mass.push_back(pf.mass());
-    JpsiKE_pi_q.push_back(pf.charge());
-    JpsiKE_pi_doca3d.push_back(doca3d);
-    JpsiKE_pi_doca3de.push_back(doca3de);
-    JpsiKE_pi_doca2d.push_back(doca2d);
-    JpsiKE_pi_doca2de.push_back(doca2de);
-    JpsiKE_pi_dz.push_back(precut_dz);
-    JpsiKE_pi_near_dz.push_back(near_dz);
-    JpsiKE_pi_isAssociate.push_back(isAssociate);
-    JpsiKE_pi_pvAssociationQuality.push_back(pf.pvAssociationQuality());
-    JpsiKE_pi_pdg.push_back(pf.pdgId());
-
-
-
+    }
   }
 
-  
   JpsiKE_e1_pt = electroncollection[mcidx_e1].pt();
   JpsiKE_e1_eta = electroncollection[mcidx_e1].eta();
   JpsiKE_e1_phi = electroncollection[mcidx_e1].phi();
@@ -988,6 +1044,15 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   JpsiKE_e1_vy = electroncollection[mcidx_e1].vy();
   JpsiKE_e1_vz = electroncollection[mcidx_e1].vz();
   
+  JpsiKE_e1_trgobj_pt = trg_obj_collection[mcidx_e1].pt();
+  JpsiKE_e1_trgobj_eta = trg_obj_collection[mcidx_e1].eta();
+  JpsiKE_e1_trgobj_phi = trg_obj_collection[mcidx_e1].phi();
+  JpsiKE_e1_trgobj_mass = trg_obj_collection[mcidx_e1].mass();
+  JpsiKE_e1_trgobj_q = trg_obj_collection[mcidx_e1].charge();
+  JpsiKE_e1_trgobj_vx = trg_obj_collection[mcidx_e1].vx();
+  JpsiKE_e1_trgobj_vy = trg_obj_collection[mcidx_e1].vy();
+  JpsiKE_e1_trgobj_vz = trg_obj_collection[mcidx_e1].vz();
+ 
   JpsiKE_e2_pt = electroncollection[mcidx_e2].pt();
   JpsiKE_e2_eta = electroncollection[mcidx_e2].eta();
   JpsiKE_e2_phi = electroncollection[mcidx_e2].phi();
@@ -996,6 +1061,15 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   JpsiKE_e2_vx = electroncollection[mcidx_e2].vx();
   JpsiKE_e2_vy = electroncollection[mcidx_e2].vy();
   JpsiKE_e2_vz = electroncollection[mcidx_e2].vz();
+
+  JpsiKE_e2_trgobj_pt = trg_obj_collection[mcidx_e2].pt();
+  JpsiKE_e2_trgobj_eta = trg_obj_collection[mcidx_e2].eta();
+  JpsiKE_e2_trgobj_phi = trg_obj_collection[mcidx_e2].phi();
+  JpsiKE_e2_trgobj_mass = trg_obj_collection[mcidx_e2].mass();
+  JpsiKE_e2_trgobj_q = trg_obj_collection[mcidx_e2].charge();
+  JpsiKE_e2_trgobj_vx = trg_obj_collection[mcidx_e2].vx();
+  JpsiKE_e2_trgobj_vy = trg_obj_collection[mcidx_e2].vy();
+  JpsiKE_e2_trgobj_vz = trg_obj_collection[mcidx_e2].vz();
 
 
   JpsiKE_PV_vx = vertices_->begin()->position().x();
@@ -1045,7 +1119,7 @@ NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   return;
 
-}//NanoAnalyzer::analyze ends
+  }//NanoAnalyzer::analyze ends
 
 
 
@@ -1113,6 +1187,15 @@ void NanoAnalyzer::createBranch() {
   tree_->Branch("JpsiKE_e1_vy"   , &JpsiKE_e1_vy    );
   tree_->Branch("JpsiKE_e1_vz"   , &JpsiKE_e1_vz    );
 
+  tree_->Branch("JpsiKE_e1_trgobj_pt", &JpsiKE_e1_trgobj_pt );
+  tree_->Branch("JpsiKE_e1_trgobj_eta", &JpsiKE_e1_trgobj_eta );
+  tree_->Branch("JpsiKE_e1_trgobj_phi", &JpsiKE_e1_trgobj_phi );
+  tree_->Branch("JpsiKE_e1_trgobj_mass", &JpsiKE_e1_trgobj_mass );
+  tree_->Branch("JpsiKE_e1_trgobj_q", &JpsiKE_e1_trgobj_q );
+  tree_->Branch("JpsiKE_e1_trgobj_vx"   , &JpsiKE_e1_trgobj_vx    );
+  tree_->Branch("JpsiKE_e1_trgobj_vy"   , &JpsiKE_e1_trgobj_vy    );
+  tree_->Branch("JpsiKE_e1_trgobj_vz"   , &JpsiKE_e1_trgobj_vz    );
+
   tree_->Branch("JpsiKE_e2_pt", &JpsiKE_e2_pt );
   tree_->Branch("JpsiKE_e2_eta", &JpsiKE_e2_eta );
   tree_->Branch("JpsiKE_e2_phi", &JpsiKE_e2_phi );
@@ -1121,6 +1204,15 @@ void NanoAnalyzer::createBranch() {
   tree_->Branch("JpsiKE_e2_vx"   , &JpsiKE_e2_vx    );
   tree_->Branch("JpsiKE_e2_vy"   , &JpsiKE_e2_vy    );
   tree_->Branch("JpsiKE_e2_vz"   , &JpsiKE_e2_vz    );
+
+  tree_->Branch("JpsiKE_e2_trgobj_pt", &JpsiKE_e2_trgobj_pt );
+  tree_->Branch("JpsiKE_e2_trgobj_eta", &JpsiKE_e2_trgobj_eta );
+  tree_->Branch("JpsiKE_e2_trgobj_phi", &JpsiKE_e2_trgobj_phi );
+  tree_->Branch("JpsiKE_e2_trgobj_mass", &JpsiKE_e2_trgobj_mass );
+  tree_->Branch("JpsiKE_e2_trgobj_q", &JpsiKE_e2_trgobj_q );
+  tree_->Branch("JpsiKE_e2_trgobj_vx"   , &JpsiKE_e2_trgobj_vx    );
+  tree_->Branch("JpsiKE_e2_trgobj_vy"   , &JpsiKE_e2_trgobj_vy    );
+  tree_->Branch("JpsiKE_e2_trgobj_vz"   , &JpsiKE_e2_trgobj_vz    );
 
   tree_->Branch("JpsiKE_PV_vx", &JpsiKE_PV_vx );
   tree_->Branch("JpsiKE_PV_vy", &JpsiKE_PV_vy );
@@ -1237,6 +1329,15 @@ void NanoAnalyzer::reset(void){
   JpsiKE_e1_vy = -99;
   JpsiKE_e1_vz = -99;
 
+  JpsiKE_e1_trgobj_pt = -99;
+  JpsiKE_e1_trgobj_eta = -99;
+  JpsiKE_e1_trgobj_phi = -99;
+  JpsiKE_e1_trgobj_mass = -99;
+  JpsiKE_e1_trgobj_q = -99;
+  JpsiKE_e1_trgobj_vx = -99;
+  JpsiKE_e1_trgobj_vy = -99;
+  JpsiKE_e1_trgobj_vz = -99;
+
   JpsiKE_e2_pt = -99;
   JpsiKE_e2_eta = -99;
   JpsiKE_e2_phi = -99;
@@ -1245,6 +1346,15 @@ void NanoAnalyzer::reset(void){
   JpsiKE_e2_vx = -99;
   JpsiKE_e2_vy = -99;
   JpsiKE_e2_vz = -99;
+
+  JpsiKE_e2_trgobj_pt = -99;
+  JpsiKE_e2_trgobj_eta = -99;
+  JpsiKE_e2_trgobj_phi = -99;
+  JpsiKE_e2_trgobj_mass = -99;
+  JpsiKE_e2_trgobj_q = -99;
+  JpsiKE_e2_trgobj_vx = -99;
+  JpsiKE_e2_trgobj_vy = -99;
+  JpsiKE_e2_trgobj_vz = -99;
 
   JpsiKE_PV_vx = -99;
   JpsiKE_PV_vy = -99;
