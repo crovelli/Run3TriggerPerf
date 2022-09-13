@@ -79,10 +79,10 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 10000
 process.options   = cms.untracked.PSet(wantSummary = cms.untracked.bool(True))
                                         
 # Set the maximum number of events to be processed here
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(10000))
+#process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(10000))
 #process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1000))
-#process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(100))
-#process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
+#process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
 
 #####################################  JSON FILE #################################
 # Change the directory and JSON file accordingly
@@ -122,8 +122,13 @@ process.load("JetMETCorrections.Configuration.JetCorrectionServicesAllAlgos_cff"
 
 
 inputFiles= [
+    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/8ac2f60d-bce0-4241-b837-6c94fd78dfc3.root'
+#    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/7bd9e53f-5ffc-4958-b204-91ddc651d5f0.root'
+#1-ok    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/cd8b0eae-415a-424c-a721-d6a43632c519.root'
+#2    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/09584e6a-a7de-42ee-98d5-c0c01fd5cb0f.root'
+#    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/12a5b544-4d8d-474a-beec-0de4dc17f0c5.root'
 #    '/store/data/Run2022C/EGamma/MINIAOD/PromptReco-v1/000/355/862/00000/5585a27a-b403-4b9f-b473-dbfd6c0a58b3.root'
-    '/store/data/Run2022C/EGamma/MINIAOD/PromptReco-v1/000/355/863/00000/357ce625-0139-4692-a826-6ecc2a57c89b.root'
+#    '/store/data/Run2022C/EGamma/MINIAOD/PromptReco-v1/000/355/863/00000/357ce625-0139-4692-a826-6ecc2a57c89b.root'
 #    '/store/data/Run2022C/ParkingDoubleElectronLowMass1/MINIAOD/PromptReco-v1/000/356/381/00000/d0ea2b7f-5b63-4ebb-aec8-95d4adc464e6.root',
 #    '/store/data/Run2022C/ParkingDoubleElectronLowMass1/MINIAOD/PromptReco-v1/000/356/170/00000/07cf47be-67de-4b52-8956-261221ac18a9.root',
 #    '/store/data/Run2022C/ParkingDoubleElectronLowMass2/MINIAOD/PromptReco-v1/000/356/170/00000/57130a2d-1e3e-4013-9236-e38cdfd81181.root',
