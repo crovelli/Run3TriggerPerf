@@ -79,9 +79,6 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 10000
 process.options   = cms.untracked.PSet(wantSummary = cms.untracked.bool(True))
                                         
 # Set the maximum number of events to be processed here
-#process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(10000))
-#process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1000))
-#process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1))
 process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
 
 #####################################  JSON FILE #################################
@@ -122,27 +119,8 @@ process.load("JetMETCorrections.Configuration.JetCorrectionServicesAllAlgos_cff"
 
 
 inputFiles= [
-    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/8ac2f60d-bce0-4241-b837-6c94fd78dfc3.root'
-#    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/7bd9e53f-5ffc-4958-b204-91ddc651d5f0.root'
-#1-ok    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/cd8b0eae-415a-424c-a721-d6a43632c519.root'
-#2    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/09584e6a-a7de-42ee-98d5-c0c01fd5cb0f.root'
-#    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/734/00000/12a5b544-4d8d-474a-beec-0de4dc17f0c5.root'
-#    '/store/data/Run2022C/EGamma/MINIAOD/PromptReco-v1/000/355/862/00000/5585a27a-b403-4b9f-b473-dbfd6c0a58b3.root'
-#    '/store/data/Run2022C/EGamma/MINIAOD/PromptReco-v1/000/355/863/00000/357ce625-0139-4692-a826-6ecc2a57c89b.root'
-#    '/store/data/Run2022C/ParkingDoubleElectronLowMass1/MINIAOD/PromptReco-v1/000/356/381/00000/d0ea2b7f-5b63-4ebb-aec8-95d4adc464e6.root',
-#    '/store/data/Run2022C/ParkingDoubleElectronLowMass1/MINIAOD/PromptReco-v1/000/356/170/00000/07cf47be-67de-4b52-8956-261221ac18a9.root',
-#    '/store/data/Run2022C/ParkingDoubleElectronLowMass2/MINIAOD/PromptReco-v1/000/356/170/00000/57130a2d-1e3e-4013-9236-e38cdfd81181.root',
-#    '/store/data/Run2022C/ParkingDoubleElectronLowMass3/MINIAOD/PromptReco-v1/000/356/170/00000/2f693ac8-1454-4889-954c-9a77e07c82a8.root',
-#    '/store/data/Run2022C/ParkingDoubleElectronLowMass1/MINIAOD/PromptReco-v1/000/356/323/00000/4667ef56-54e3-4152-a6da-1100c492cd74.root',
-#    '/store/data/Run2022C/ParkingDoubleElectronLowMass5/MINIAOD/PromptReco-v1/000/356/170/00000/e247937b-47c5-4088-b39d-e0e631882072.root',
-#    '/store/data/Run2022C/ParkingDoubleElectronLowMass0/MINIAOD/PromptReco-v1/000/356/170/00000/45c0f2ed-eb5b-4292-abc8-3117424d9432.root'
-#    '/store/data/Run2022C/HLTPhysics/MINIAOD/PromptReco-v1/000/355/872/00000/725217a6-902f-48e4-84ff-ec18ec794c66.root',
-#    '/store/data/Run2022C/HLTPhysics/MINIAOD/PromptReco-v1/000/355/872/00000/97c45763-b1e9-490d-8f99-f5133b889fa6.root',
-#    '/store/data/Run2022C/HLTPhysics/MINIAOD/PromptReco-v1/000/355/872/00000/cc0ee657-ec41-4470-a3c6-40d386088c1e.root'
+    '/store/data/Run2022D/EGamma/MINIAOD/PromptReco-v2/000/357/899/00000/990a1665-d685-4623-8ddb-803c01962243.root',
 ]
-
-#'/store/data/Run2022C/HLTPhysics/MINIAOD/PromptReco-v1/000/356/003/00000/194e1847-a63a-44e0-805a-30c56ae0f48a.root'
-
 
 process.source = cms.Source("PoolSource",
 # for crab
@@ -170,6 +148,7 @@ process.nano_ = cms.EDAnalyzer('NanoAnalyzer',
                               packedpfcandidates = cms.InputTag('packedPFCandidates'),
                               HLT = cms.InputTag("TriggerResults","","HLT"),
                               triggerobjects = cms.InputTag("slimmedPatTrigger"),
+                              l1EG = cms.InputTag("caloStage2Digis", "EGamma"), 
                               # Change this:
                               # If HTC/VM:
                               #outFile = cms.string(options.outputName),
