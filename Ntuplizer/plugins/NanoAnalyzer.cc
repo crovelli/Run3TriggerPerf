@@ -321,6 +321,11 @@ using std::unordered_map;
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidateFwd.h"
 
+//********************************
+// for L1 information *
+#include "DataFormats/L1Trigger/interface/BXVector.h"
+#include "DataFormats/L1Trigger/interface/EGamma.h"
+
 //***************************
 // class member declaration *
 //***************************
@@ -369,14 +374,15 @@ private:
   EDGetTokenT<pat::PackedCandidateCollection> packedpfcandidatesToken_;
   EDGetTokenT<edm::TriggerResults> triggerToken_;  
   EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerobjectToken_;
+  edm::EDGetTokenT<l1t::EGammaBxCollection> l1EG_;
 
   ESGetToken<TransientTrackBuilder, TransientTrackRecord> ttkToken;
 
-  Handle<pat::ElectronCollection>      		       electrons_;
-  Handle< reco::VertexCollection >                        vertices_;
-  Handle< std::vector<pat::PackedCandidate> >             packedpfcandidates_   ;
-  Handle< edm::TriggerResults> 			       HLTtriggers_;
-  Handle<pat::TriggerObjectStandAloneCollection>	     triggerObjects;
+  Handle<pat::ElectronCollection> electrons_;
+  Handle< reco::VertexCollection > vertices_;
+  Handle< std::vector<pat::PackedCandidate> > packedpfcandidates_   ;
+  Handle< edm::TriggerResults> HLTtriggers_;
+  Handle<pat::TriggerObjectStandAloneCollection> triggerObjects;
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -387,9 +393,10 @@ private:
   TTree* tree_;
 
   /// original nanoAOD ///
-  UInt_t run;
+  int run;
   ULong64_t event;
-  UInt_t luminosityBlock;
+  int luminosityBlock;
+  int nvtx;
 
   float                JpsiKE_e1_pt      ;
   float                JpsiKE_e1_eta     ;
@@ -400,20 +407,27 @@ private:
   float                JpsiKE_e1_vy       ;
   float                JpsiKE_e1_vz       ;
   float                JpsiKE_e1_passMVA  ;
+  float                JpsiKE_e1_bestL1pt  ;
+  float                JpsiKE_e1_bestL1eta ;
+  float                JpsiKE_e1_bestL1phi  ;
+  float                JpsiKE_e1_bestL1Deta ;
+  float                JpsiKE_e1_bestL1Dphi ;
   
   float                JpsiKE_e2_pt      ;
   float                JpsiKE_e2_eta     ;
   float                JpsiKE_e2_phi     ;
   float                JpsiKE_e2_mass     ;
+  int                  JpsiKE_e2_alsotag ;
   int                  JpsiKE_e2_q   ;   
   float                JpsiKE_e2_vx       ;
   float                JpsiKE_e2_vy       ;
   float                JpsiKE_e2_vz       ;
   float                JpsiKE_e2_passMVA  ;
-
-  float                JpsiKE_probe_pt      ;
-  float                JpsiKE_probe_eta     ;
-  float                JpsiKE_probe_phi     ;
+  float                JpsiKE_e2_bestL1pt  ;
+  float                JpsiKE_e2_bestL1eta ;
+  float                JpsiKE_e2_bestL1phi  ;
+  float                JpsiKE_e2_bestL1Deta ;
+  float                JpsiKE_e2_bestL1Dphi ;
 
   float                JpsiKE_e1_trgobj_pt      ;
   float                JpsiKE_e1_trgobj_eta     ;
@@ -453,6 +467,7 @@ private:
   float                JpsiKE_Jpsi_mass       ;
   float                JpsiKE_Jpsi_mass_nofit ;
   float                JpsiKE_Jpsi_vprob    ;
+  float                JpsiKE_elesDr    ;
 
   std::vector<int> DoubleEle_fired{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -471,8 +486,6 @@ private:
   std::vector<float> ele2_matchedDiEle_eta{-999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999.};
   std::vector<float> ele1_matchedDiEle_phi{-999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999.};
   std::vector<float> ele2_matchedDiEle_phi{-999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999., -999.};
-
-  std::vector<int> eleprobe_matchedDiEle{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
   helperfunc aux;
   float chi = 0.;
@@ -498,6 +511,8 @@ NanoAnalyzer::NanoAnalyzer(const edm::ParameterSet& iConfig)
   triggerToken_	      	   = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("HLT"));
   triggerobjectToken_	   = consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("triggerobjects"));
 
+  l1EG_                    = consumes<l1t::EGammaBxCollection>(iConfig.getParameter<edm::InputTag>("l1EG"));
+
   ttkToken = esConsumes(edm::ESInputTag{"","TransientTrackBuilder"});
 
   hist = fs->make<TH1F>("cutflow", "cutflow", 10,0,10);
@@ -518,11 +533,14 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   
   iEvent.getByToken(triggerToken_, HLTtriggers_);
   iEvent.getByToken(triggerobjectToken_ , triggerObjects);
+  iEvent.getByToken(verticeToken_, vertices_     ); 
 
   run = (iEvent.id()).run();
   event = (iEvent.id()).event();
   luminosityBlock = (iEvent.id()).luminosityBlock();
   
+  nvtx = vertices_->size();
+
   hist->Fill(1);
 
   // pT thresholds for di-ele trigger
@@ -571,16 +589,16 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   std::vector<pat::TriggerObjectStandAlone> trg_obj_collection;   // collection with HLT candidate with best match with offline electrons 
                                                                   // (passing matching criteria) - at most one per electron
 
-  std::vector<pat::TriggerObjectStandAlone> trg_objjet_collection;   // collection with HLT jet candidate with best match with offline electrons 
-                                                                     // (without matching criteria) - at most one per electron
+  //std::vector<pat::TriggerObjectStandAlone> trg_objjet_collection;   // collection with HLT jet candidate with best match with offline electrons 
+                                                                       // (without matching criteria) - at most one per electron
 
   std::vector<int> electronmatched;                               // integer with the position in the trg_obj_collection of the HLT object matched to ele
-  std::vector<int> electronmatchedjet;                            // integer with the position in the trg_obj_collection of the HLT object matched to jet
+  // std::vector<int> electronmatchedjet;                            // integer with the position in the trg_obj_collection of the HLT object matched to jet
   electroncollection.clear();
   trg_obj_collection.clear();
-  trg_objjet_collection.clear();
+  // trg_objjet_collection.clear();
   electronmatched.clear();
-  electronmatchedjet.clear();
+  // electronmatchedjet.clear();
 
   // std::cout << "event = " << event << ", electrons_->size() = " << electrons_->size() << std::endl;
 
@@ -618,20 +636,6 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       bool isPathExist = false;
       for (unsigned h = 0, n = pathNamesAll.size(); h < n; ++h) {
       	if(pathNamesAll[h]==elejetTriggerName) isPathExist = true;
-	
-	/*
-	  bool isBoth = obj.hasPathName( pathNamesAll[h], true, true );
-	  bool isL3   = obj.hasPathName( pathNamesAll[h], false, true );
-	  bool isLF   = obj.hasPathName( pathNamesAll[h], true, false );
-	  bool isNone = obj.hasPathName( pathNamesAll[h], false, false );
-	  std::cout << "event = " << event << ": path " << h << " => " << pathNamesAll[h];
-	  if (isBoth) std::cout << "(L,3)";
-	  if (isL3 && !isBoth) std::cout << "(*,3)";
-	  if (isLF && !isBoth) std::cout << "(L,*)";
-	  if (isNone && !isBoth && !isL3 && !isLF) std::cout << "(*,*)";
-	  std::cout << std::endl;	  
-	*/
-
       }
       if(!isPathExist) continue;
 
@@ -730,13 +734,13 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     }
 
     // ele/jetHLT 
-    if(trigObjMatchJet){  
-      trg_objjet_collection.push_back(best_match_objjet);
-      electronmatchedjet.push_back(int(trg_objjet_collection.size())-1);
-    }
-    else{
-      electronmatchedjet.push_back(-999);	
-    }
+    // if(trigObjMatchJet){  
+    // trg_objjet_collection.push_back(best_match_objjet);
+    // electronmatchedjet.push_back(int(trg_objjet_collection.size())-1);
+    //}
+    //else{
+    // electronmatchedjet.push_back(-999);	
+    //}
 
     // std::cout << "event = " << event << ", ielectron = " << ielectron << ", electron.pt() =  " << electron.pt() << ", trigObjMatchJet = " << trigObjMatchJet << ", trigObjMatchEle = " << trigObjMatchEle << std::endl;
   
@@ -761,8 +765,8 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   int mcidx_e2 = -1;
   int mcidx_trgobj1 = -1;
   int mcidx_trgobj2 = -1;
-  int mcidx_trgobjjet1 = -1;
-  int mcidx_trgobjjet2 = -1;
+  //int mcidx_trgobjjet1 = -1;
+  //int mcidx_trgobjjet2 = -1;
   TLorentzVector jpsi_tlv_highest;
 
   for(int ie = 0; ie < (int)electroncollection.size(); ie++){
@@ -776,8 +780,8 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       // match with trigger ele
       int this_mcidx_trgobj1 = -1;
       int this_mcidx_trgobj2 = -1;
-      int this_mcidx_trgobjjet1 = -1;
-      int this_mcidx_trgobjjet2 = -1;
+      //int this_mcidx_trgobjjet1 = -1;
+      //int this_mcidx_trgobjjet2 = -1;
       if (electronmatched[ie]>-999){
 	this_mcidx_trgobj1 = electronmatched[ie];
 	// std::cout << "mcidx_trgobj1 = " << this_mcidx_trgobj1 << std::endl; 
@@ -788,14 +792,14 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       }
       
       // match with trigger jet
-      if (electronmatchedjet[ie]>-999){
-	this_mcidx_trgobjjet1 = electronmatchedjet[ie];
-	// std::cout << "mcidx_trgobjjet1 = " << this_mcidx_trgobjjet1 << std::endl; 
-      }
-      if (electronmatchedjet[je]>-999){
-	this_mcidx_trgobjjet2 = electronmatchedjet[je];
-	// std::cout << "mcidx_trgobjjet2 = " << this_mcidx_trgobjjet2 << std::endl; 
-      }
+      //if (electronmatchedjet[ie]>-999){
+      //this_mcidx_trgobjjet1 = electronmatchedjet[ie];
+      // std::cout << "mcidx_trgobjjet1 = " << this_mcidx_trgobjjet1 << std::endl; 
+      //}
+      //if (electronmatchedjet[je]>-999){
+      //this_mcidx_trgobjjet2 = electronmatchedjet[je];
+      // std::cout << "mcidx_trgobjjet2 = " << this_mcidx_trgobjjet2 << std::endl; 
+      //}
 
       const pat::Electron e1 = electroncollection[ie];
       const pat::Electron e2 = electroncollection[je];
@@ -834,10 +838,8 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       // std::cout << "event = " << event << ", jpsi_mass = " << jpsi_mass << std::endl;
 
       if (e1.charge() + e2.charge() !=0) continue;
-      //if (jpsi_mass < 2.6) continue; 
-      //if (jpsi_mass > 3.6) continue;
-      if (jpsi_mass < 1.0) continue; 
-      if (jpsi_mass > 5.0) continue;
+      if (jpsi_mass < 2.0) continue; 
+      if (jpsi_mass > 4.0) continue;
       // std::cout << "event = " << event << ": jpsi_mass = " << jpsi_mass << ", jpsi_max_pt = " << jpsi_max_pt << ", jpsi_pt = " << jpsi_pt << std::endl;
 
       if(jpsi_max_pt < jpsi_pt){
@@ -846,8 +848,8 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	mcidx_e2 = je;
 	mcidx_trgobj1 = this_mcidx_trgobj1;
 	mcidx_trgobj2 = this_mcidx_trgobj2;
-	mcidx_trgobjjet1 = this_mcidx_trgobjjet1;
-	mcidx_trgobjjet2 = this_mcidx_trgobjjet2;
+	//mcidx_trgobjjet1 = this_mcidx_trgobjjet1;
+	//mcidx_trgobjjet2 = this_mcidx_trgobjjet2;
 	jpsi_tlv_highest = tlv_jpsi;
       }
       // std::cout << "jpsi_mass = " << jpsi_mass << ", jpsi_max_pt = " << jpsi_max_pt << ", jpsi_pt = " << jpsi_pt << std::endl;      
@@ -934,7 +936,44 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   } // Loop over paths
 
 
-  // Match online / offline
+  // Swap 1<->2 so that: 1 is always tag, 2 is always probe, and additional variable tells if 2 is also tag
+  int mcidx_tag = -99;
+  int mcidx_pro = -99;
+  int mcidx_trgobj_tag = -99;
+  int mcidx_trgobj_pro = -99;
+  int mcidx_trgobjjet_tag = -99;
+  int mcidx_trgobjjet_pro = -99;
+  int is_probe_also_tag = -99;
+
+  if (mcidx_trgobj1>=0) {
+    mcidx_pro = mcidx_e2;
+    mcidx_trgobj_pro = mcidx_trgobj2;
+    //mcidx_trgobjjet_pro = mcidx_trgobjjet2;
+    mcidx_tag = mcidx_e1;
+    mcidx_trgobj_tag = mcidx_trgobj1;
+    //mcidx_trgobjjet_tag = mcidx_trgobjjet1;
+    if (mcidx_trgobj2<0)  is_probe_also_tag = 0;
+    if (mcidx_trgobj2>=0) is_probe_also_tag = 1;
+  } else {  
+    mcidx_pro = mcidx_e1;
+    mcidx_trgobj_pro = mcidx_trgobj1;
+    //mcidx_trgobjjet_pro = mcidx_trgobjjet1;
+    mcidx_tag = mcidx_e2;
+    mcidx_trgobj_tag = mcidx_trgobj2;
+    //mcidx_trgobjjet_tag = mcidx_trgobjjet2;
+    is_probe_also_tag = 0;
+  }
+
+  mcidx_e1 = mcidx_tag;
+  mcidx_e2 = mcidx_pro;
+  mcidx_trgobj1 = mcidx_trgobj_tag;
+  mcidx_trgobj2 = mcidx_trgobj_pro;
+  //mcidx_trgobjjet1 = mcidx_trgobjjet_tag;
+  //mcidx_trgobjjet2 = mcidx_trgobjjet_pro;
+
+
+
+  // Offline electrons
   float reco_e1_pt  = electroncollection[mcidx_e1].pt(); 
   float reco_e1_eta = electroncollection[mcidx_e1].eta(); 
   float reco_e1_phi = electroncollection[mcidx_e1].phi(); 
@@ -947,6 +986,8 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   //std::cout << "Offline1: " << reco_e1_pt << " " << reco_e1_eta << " " << reco_e1_phi << std::endl;
   //std::cout << "Offline2: " << reco_e2_pt << " " << reco_e2_eta << " " << reco_e2_phi << std::endl;
 
+
+  // Match HLT / offline
   for(int j=0; j<int(pt_thr_v_string.size()); j++){
     
     if (dieleobj1_pt[j]>=0) {
@@ -1002,6 +1043,46 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     }
   }
 
+  // Match L1 / offline
+  float bestMatchE1_eta  = -99.;
+  float bestMatchE1_phi  = -99.;
+  float bestMatchE1_pt   = -99.;
+  float bestMatchE1_Deta = -99.;
+  float bestMatchE1_Dphi = -99.;
+  float bestMatchE2_eta  = -99.;
+  float bestMatchE2_phi  = -99.;
+  float bestMatchE2_pt   = -99.;
+  float bestMatchE2_Deta = -99.;
+  float bestMatchE2_Dphi = -99.;
+  float bestMatchDrE1 = 999;
+  float bestMatchDrE2 = 999;
+  const auto &l1EG = iEvent.get(l1EG_);
+  for (l1t::EGammaBxCollection::const_iterator it = l1EG.begin(0); it != l1EG.end(0); it++) {
+    pat::TriggerObjectStandAlone l1obj(it->p4());
+    
+    TVector3 l1objTV3;
+    l1objTV3.SetPtEtaPhi( it->pt(), it->eta(), it->phi() );
+    Float_t deltaRE1 = fabs(ele1TV3.DeltaR(l1objTV3));
+    Float_t deltaRE2 = fabs(ele2TV3.DeltaR(l1objTV3));
+
+    if (deltaRE1<bestMatchDrE1 && deltaRE1<0.25){
+      bestMatchDrE1 = deltaRE1;
+      bestMatchE1_eta  = it->eta(); 
+      bestMatchE1_phi  = it->phi(); 
+      bestMatchE1_pt   = it->pt();    
+      bestMatchE1_Deta = fabs(it->eta() - electroncollection[mcidx_e1].eta());
+      bestMatchE1_Dphi = fabs(ele1TV3.DeltaPhi(l1objTV3));
+    }
+    if (deltaRE2<bestMatchDrE2 && deltaRE2<0.25){
+      bestMatchDrE2 = deltaRE2;
+      bestMatchE2_eta  = it->eta(); 
+      bestMatchE2_phi  = it->phi(); 
+      bestMatchE2_pt   = it->pt(); 
+      bestMatchE2_Deta = fabs(it->eta() - electroncollection[mcidx_e2].eta());
+      bestMatchE2_Dphi = fabs(ele2TV3.DeltaPhi(l1objTV3));
+    }
+  }
+
   // Infos about JPsi candidate
   JpsiKE_e1_pt   = electroncollection[mcidx_e1].pt();
   JpsiKE_e1_eta  = electroncollection[mcidx_e1].eta();
@@ -1012,30 +1093,27 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   JpsiKE_e1_vy   = electroncollection[mcidx_e1].vy();
   JpsiKE_e1_vz   = electroncollection[mcidx_e1].vz();
   JpsiKE_e1_passMVA = electroncollection[mcidx_e1].electronID("mvaEleID-Fall17-noIso-V2-wpLoose");
+  JpsiKE_e1_bestL1pt   = bestMatchE1_pt;
+  JpsiKE_e1_bestL1eta  = bestMatchE1_eta;
+  JpsiKE_e1_bestL1phi  = bestMatchE1_phi;
+  JpsiKE_e1_bestL1Deta = bestMatchE1_Deta;  
+  JpsiKE_e1_bestL1Dphi = bestMatchE1_Dphi;  
 
   JpsiKE_e2_pt   = electroncollection[mcidx_e2].pt();
   JpsiKE_e2_eta  = electroncollection[mcidx_e2].eta();
   JpsiKE_e2_phi  = electroncollection[mcidx_e2].phi();
   JpsiKE_e2_mass = electroncollection[mcidx_e2].mass();
+  JpsiKE_e2_alsotag = is_probe_also_tag;
   JpsiKE_e2_q    = electroncollection[mcidx_e2].charge();
   JpsiKE_e2_vx   = electroncollection[mcidx_e2].vx();
   JpsiKE_e2_vy   = electroncollection[mcidx_e2].vy();
   JpsiKE_e2_vz   = electroncollection[mcidx_e2].vz();
   JpsiKE_e2_passMVA = electroncollection[mcidx_e2].electronID("mvaEleID-Fall17-noIso-V2-wpLoose");
-
-  if (mcidx_trgobj2>=0) {
-    JpsiKE_probe_pt   = JpsiKE_e1_pt;
-    JpsiKE_probe_eta  = JpsiKE_e1_eta;
-    JpsiKE_probe_phi  = JpsiKE_e1_phi;
-    for(int j=0; j<int(pt_thr_v_string.size()); j++) 
-      eleprobe_matchedDiEle[j] = ele1_matchedDiEle[j];
-  } else {
-    JpsiKE_probe_pt   = JpsiKE_e2_pt;
-    JpsiKE_probe_eta  = JpsiKE_e2_eta;
-    JpsiKE_probe_phi  = JpsiKE_e2_phi;
-    for(int j=0; j<int(pt_thr_v_string.size()); j++) 
-      eleprobe_matchedDiEle[j] = ele2_matchedDiEle[j];
-  }
+  JpsiKE_e2_bestL1pt   = bestMatchE2_pt;
+  JpsiKE_e2_bestL1eta  = bestMatchE2_eta;
+  JpsiKE_e2_bestL1phi  = bestMatchE2_phi;
+  JpsiKE_e2_bestL1Deta = bestMatchE2_Deta;  
+  JpsiKE_e2_bestL1Dphi = bestMatchE2_Dphi;  
 
   if (mcidx_trgobj1>=0) {
     JpsiKE_e1_trgobj_pt   = trg_obj_collection[mcidx_trgobj1].pt();
@@ -1059,6 +1137,7 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     JpsiKE_e2_trgobj_vz   = trg_obj_collection[mcidx_trgobj2].vz();
   }
 
+  /*
   if (mcidx_trgobjjet1>=0) {
     JpsiKE_e1trgobjjet_pt  = trg_objjet_collection[mcidx_trgobjjet1].pt();
     JpsiKE_e1trgobjjet_eta = trg_objjet_collection[mcidx_trgobjjet1].eta();
@@ -1089,6 +1168,7 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       }
     }
   }
+  */
 
   JpsiKE_Jpsi_pt  = jpsi_part->currentState().globalMomentum().perp();
   JpsiKE_Jpsi_eta = jpsi_part->currentState().globalMomentum().eta();
@@ -1099,7 +1179,8 @@ void NanoAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   JpsiKE_Jpsi_mass = jpsi_part->currentState().mass();
   JpsiKE_Jpsi_mass_nofit = jpsi_tlv_highest.M();
   JpsiKE_Jpsi_vprob = TMath::Prob(jpsi_part->chiSquared(), jpsi_part->degreesOfFreedom());
- 
+  JpsiKE_elesDr = ele1TV3.DeltaR(ele2TV3); 
+
   tree_->Fill();
 
   return;
@@ -1141,10 +1222,7 @@ void NanoAnalyzer::createBranch() {
   tree_->Branch("run", &run, "run/i");
   tree_->Branch("event", &event, "event/l");
   tree_->Branch("luminosityBlock", &luminosityBlock, "luminosityBlock/i");
-
-  tree_->Branch("JpsiKE_probe_pt", &JpsiKE_probe_pt );
-  tree_->Branch("JpsiKE_probe_eta", &JpsiKE_probe_eta );
-  tree_->Branch("JpsiKE_probe_phi", &JpsiKE_probe_phi );
+  tree_->Branch("nvtx", &nvtx, "nvtx/i");
 
   tree_->Branch("JpsiKE_e1_pt", &JpsiKE_e1_pt );
   tree_->Branch("JpsiKE_e1_eta", &JpsiKE_e1_eta );
@@ -1155,6 +1233,11 @@ void NanoAnalyzer::createBranch() {
   tree_->Branch("JpsiKE_e1_vy"   , &JpsiKE_e1_vy    );
   tree_->Branch("JpsiKE_e1_vz"   , &JpsiKE_e1_vz    );
   tree_->Branch("JpsiKE_e1_passMVA"   , &JpsiKE_e1_passMVA    );
+  tree_->Branch("JpsiKE_e1_bestL1pt",   &JpsiKE_e1_bestL1pt   );
+  tree_->Branch("JpsiKE_e1_bestL1eta" , &JpsiKE_e1_bestL1eta  );
+  tree_->Branch("JpsiKE_e1_bestL1phi" , &JpsiKE_e1_bestL1phi  );
+  tree_->Branch("JpsiKE_e1_bestL1Deta", &JpsiKE_e1_bestL1Deta );
+  tree_->Branch("JpsiKE_e1_bestL1Dphi", &JpsiKE_e1_bestL1Dphi );
 
   tree_->Branch("JpsiKE_e1_Ele10_match",  &ele1_matchedDiEle[0] );
   tree_->Branch("JpsiKE_e1_Ele9p5_match", &ele1_matchedDiEle[1] );
@@ -1216,11 +1299,17 @@ void NanoAnalyzer::createBranch() {
   tree_->Branch("JpsiKE_e2_eta", &JpsiKE_e2_eta );
   tree_->Branch("JpsiKE_e2_phi", &JpsiKE_e2_phi );
   tree_->Branch("JpsiKE_e2_mass", &JpsiKE_e2_mass );
+  tree_->Branch("JpsiKE_e2_alsotag", &JpsiKE_e2_alsotag );
   tree_->Branch("JpsiKE_e2_q", &JpsiKE_e2_q );
   tree_->Branch("JpsiKE_e2_vx"   , &JpsiKE_e2_vx    );
   tree_->Branch("JpsiKE_e2_vy"   , &JpsiKE_e2_vy    );
   tree_->Branch("JpsiKE_e2_vz"   , &JpsiKE_e2_vz    );
   tree_->Branch("JpsiKE_e2_passMVA"   , &JpsiKE_e2_passMVA    );
+  tree_->Branch("JpsiKE_e2_bestL1pt",   &JpsiKE_e2_bestL1pt );
+  tree_->Branch("JpsiKE_e2_bestL1eta" , &JpsiKE_e2_bestL1eta );
+  tree_->Branch("JpsiKE_e2_bestL1phi" , &JpsiKE_e2_bestL1phi );
+  tree_->Branch("JpsiKE_e2_bestL1Deta" , &JpsiKE_e2_bestL1Deta );
+  tree_->Branch("JpsiKE_e2_bestL1Dphi" , &JpsiKE_e2_bestL1Dphi );
 
   tree_->Branch("JpsiKE_e2_Ele10_match",  &ele2_matchedDiEle[0] );
   tree_->Branch("JpsiKE_e2_Ele9p5_match", &ele2_matchedDiEle[1] );
@@ -1330,20 +1419,7 @@ void NanoAnalyzer::createBranch() {
   tree_->Branch("JpsiKE_Jpsi_mass", &JpsiKE_Jpsi_mass );
   tree_->Branch("JpsiKE_Jpsi_mass_nofit", &JpsiKE_Jpsi_mass_nofit );
   tree_->Branch("JpsiKE_Jpsi_vprob", &JpsiKE_Jpsi_vprob );
-
-  tree_->Branch("JpsiKE_probe_Ele10_match",  &eleprobe_matchedDiEle[0] );
-  tree_->Branch("JpsiKE_probe_Ele9p5_match", &eleprobe_matchedDiEle[1] );
-  tree_->Branch("JpsiKE_probe_Ele9_match",   &eleprobe_matchedDiEle[2] );
-  tree_->Branch("JpsiKE_probe_Ele8p5_match", &eleprobe_matchedDiEle[3] );
-  tree_->Branch("JpsiKE_probe_Ele8_match",   &eleprobe_matchedDiEle[4] );
-  tree_->Branch("JpsiKE_probe_Ele7p5_match", &eleprobe_matchedDiEle[5] );
-  tree_->Branch("JpsiKE_probe_Ele7_match",   &eleprobe_matchedDiEle[6] );
-  tree_->Branch("JpsiKE_probe_Ele6p5_match", &eleprobe_matchedDiEle[7] );
-  tree_->Branch("JpsiKE_probe_Ele6_match",   &eleprobe_matchedDiEle[8] );
-  tree_->Branch("JpsiKE_probe_Ele5p5_match", &eleprobe_matchedDiEle[9] );
-  tree_->Branch("JpsiKE_probe_Ele5_match",   &eleprobe_matchedDiEle[10] );
-  tree_->Branch("JpsiKE_probe_Ele4p5_match", &eleprobe_matchedDiEle[11] );
-  tree_->Branch("JpsiKE_probe_Ele4_match",   &eleprobe_matchedDiEle[12] );
+  tree_->Branch("JpsiKE_elesDr", &JpsiKE_elesDr );
 }
 
 void NanoAnalyzer::reset(void){
@@ -1351,6 +1427,7 @@ void NanoAnalyzer::reset(void){
   run = -1;
   event = -1;
   luminosityBlock = -1;
+  nvtx = -1;
 
   JpsiKE_e1_pt = -99;
   JpsiKE_e1_eta = -99;
@@ -1361,20 +1438,27 @@ void NanoAnalyzer::reset(void){
   JpsiKE_e1_vy = -99;
   JpsiKE_e1_vz = -99;
   JpsiKE_e1_passMVA = -99;
+  JpsiKE_e1_bestL1pt = -99;
+  JpsiKE_e1_bestL1eta  = -99;
+  JpsiKE_e1_bestL1phi  = -99;
+  JpsiKE_e1_bestL1Deta = -99;
+  JpsiKE_e1_bestL1Dphi = -99;
 
   JpsiKE_e2_pt = -99;
   JpsiKE_e2_eta = -99;
   JpsiKE_e2_phi = -99;
   JpsiKE_e2_mass = -99;
+  JpsiKE_e2_alsotag = -99;
   JpsiKE_e2_q = -99;
   JpsiKE_e2_vx = -99;
   JpsiKE_e2_vy = -99;
   JpsiKE_e2_vz = -99;
   JpsiKE_e2_passMVA = -99;
-
-  JpsiKE_probe_pt = -99;
-  JpsiKE_probe_eta = -99;
-  JpsiKE_probe_phi = -99;
+  JpsiKE_e2_bestL1pt = -99;
+  JpsiKE_e2_bestL1eta = -99;
+  JpsiKE_e2_bestL1phi = -99;
+  JpsiKE_e2_bestL1Deta = -99;
+  JpsiKE_e2_bestL1Dphi = -99;
 
   JpsiKE_e1_trgobj_pt = -99;
   JpsiKE_e1_trgobj_eta = -99;
@@ -1414,6 +1498,7 @@ void NanoAnalyzer::reset(void){
   JpsiKE_Jpsi_mass = -99;
   JpsiKE_Jpsi_mass_nofit = -99;
   JpsiKE_Jpsi_vprob = -99;
+  JpsiKE_elesDr = -99;
 
   for (int ii=0; ii<13; ii++) DoubleEle_fired[ii] = 0.;
 
@@ -1432,8 +1517,6 @@ void NanoAnalyzer::reset(void){
   for (int ii=0; ii<13; ii++) ele2_matchedDiEle_eta[ii] = 0.;
   for (int ii=0; ii<13; ii++) ele1_matchedDiEle_phi[ii] = 0.;
   for (int ii=0; ii<13; ii++) ele2_matchedDiEle_phi[ii] = 0.;
-
-  for (int ii=0; ii<13; ii++) eleprobe_matchedDiEle[ii] = 0.;
 }
 
 DEFINE_FWK_MODULE(NanoAnalyzer);
