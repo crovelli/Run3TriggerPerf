@@ -15,49 +15,48 @@ config.Data.inputDBS = 'global'
 config.Data.splitting = 'FileBased'
 config.Data.unitsPerJob = 2
 
-#config.Data.outLFNDirBase = '/store/user/jodedra/Run3/' #% (getUsernameFromSiteDB())
-#config.Data.publication = True
-#config.Data.outputDatasetTag = 'winter21'
-#config.Site.ignoreGlobalBlacklist = True
-#config.Data.ignoreLocality = True
-#config.Site.whitelist = ['T2_CH_*']
-#config.Site.blacklist = ['T2_US_Purdue']
-
-
-config.General.workArea = 'crab_doubleele_new2/crab_doubleele_new2_Fv1'
+config.General.workArea = 'crab_elejet_lastversion/crab_elejet_lastversion'
 
 #name='/EGamma/Run2022C-PromptReco-v1/MINIAOD/DoubleEleTest'
 #config.General.requestName = name.replace('/','_')
 #config.Data.inputDataset = '/EGamma/Run2022C-PromptReco-v1/MINIAOD'
 #config.Data.outputDatasetTag = 'Run2022C-PromptReco-v1_DoubleEleTest'
-#config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022/%s' % (config.General.workArea)
+#config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022Last/%s' % (config.General.workArea)
 
 #name='/EGamma/Run2022D-PromptReco-v1/MINIAOD/DoubleEleTest'
 #config.General.requestName = name.replace('/','_')
 #config.Data.inputDataset = '/EGamma/Run2022D-PromptReco-v1/MINIAOD'
 #config.Data.outputDatasetTag = 'Run2022D-PromptReco-v1_DoubleEleTest'
-#config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022/%s' % (config.General.workArea)
+#config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022Last/%s' % (config.General.workArea)
 
 #name='/EGamma/Run2022D-PromptReco-v2/MINIAOD/DoubleEleTest'
 #config.General.requestName = name.replace('/','_')
 #config.Data.inputDataset = '/EGamma/Run2022D-PromptReco-v2/MINIAOD'
 #config.Data.outputDatasetTag = 'Run2022D-PromptReco-v2_DoubleEleTest'
-#config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022/%s' % (config.General.workArea)
+#config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022Last/%s' % (config.General.workArea)
+##config.Data.outLFNDirBase = '/store/group/phys_bphys/crovelli/triggerRun3/EGamma2022/%s' % (config.General.workArea)   
 
 #name='/EGamma/Run2022E-PromptReco-v1/MINIAOD/DoubleEleTest'
 #config.General.requestName = name.replace('/','_')
 #config.Data.inputDataset = '/EGamma/Run2022E-PromptReco-v1/MINIAOD'
 #config.Data.outputDatasetTag = 'Run2022E-PromptReco-v1_DoubleEleTest'
-#config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022/%s' % (config.General.workArea)
+#config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022Last/%s' % (config.General.workArea)
 
-name='/EGamma/Run2022F-PromptReco-v1/MINIAOD/DoubleEleTest'
+#name='/EGamma/Run2022F-PromptReco-v1/MINIAOD/DoubleEleTest'
+#config.General.requestName = name.replace('/','_')
+#config.Data.inputDataset = '/EGamma/Run2022F-PromptReco-v1/MINIAOD'
+#config.Data.outputDatasetTag = 'Run2022F-PromptReco-v1_DoubleEleTest'
+#config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022Last/%s' % (config.General.workArea)
+
+name='/EGamma/Run2022G-PromptReco-v1/MINIAOD/DoubleEleTest'
 config.General.requestName = name.replace('/','_')
-config.Data.inputDataset = '/EGamma/Run2022F-PromptReco-v1/MINIAOD'
-config.Data.outputDatasetTag = 'Run2022F-PromptReco-v1_DoubleEleTest'
-config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022/%s' % (config.General.workArea)
+config.Data.inputDataset = '/EGamma/Run2022G-PromptReco-v1/MINIAOD'
+config.Data.outputDatasetTag = 'Run2022G-PromptReco-v1_DoubleEleTest'
+config.Data.outLFNDirBase = '/store/user/crovelli/EGamma2022Last/%s' % (config.General.workArea)
 
 
 config.section_('User')
 config.section_('Site')
 config.Site.storageSite = 'T2_IT_Rome'
+#config.Site.storageSite = 'T2_CH_CERN'
 
