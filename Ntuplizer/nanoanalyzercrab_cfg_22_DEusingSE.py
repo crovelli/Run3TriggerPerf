@@ -73,7 +73,8 @@ process.load("JetMETCorrections.Configuration.JetCorrectionServicesAllAlgos_cff"
 #/ParkingDoubleElectronLowMass0/Run2022F-PromptReco-v1/MINIAOD  --> LowMass5
 
 inputFiles= [
-    '/store/data/Run2022F/ParkingDoubleElectronLowMass0/MINIAOD/PromptReco-v1/000/360/390/00000/468e11de-d213-4c3f-a8b7-782a56e9ef1a.root'
+#    '/store/data/Run2022F/ParkingDoubleElectronLowMass0/MINIAOD/PromptReco-v1/000/360/390/00000/468e11de-d213-4c3f-a8b7-782a56e9ef1a.root'
+    '/store/data/Run2022F/ParkingDoubleElectronLowMass0/MINIAOD/PromptReco-v1/000/360/825/00000/f30d57ed-9ce0-4323-9253-efe55af8bba0.root'
 ]
 
 process.source = cms.Source("PoolSource",
@@ -95,7 +96,10 @@ process.TFileService = cms.Service("TFileService",
 # Process the analyzer
 process.nano_ = cms.EDAnalyzer('NanoAnalyzerSingleEle',
                               electrons = cms.InputTag("slimmedElectrons"),
+                              vertices = cms.InputTag("offlineSlimmedPrimaryVertices"),
+                              packedpfcandidates = cms.InputTag('packedPFCandidates'),  
                               HLT = cms.InputTag("TriggerResults","","HLT"),
                               triggerobjects = cms.InputTag("slimmedPatTrigger"),
+                              l1EG = cms.InputTag("caloStage2Digis", "EGamma"), 
 )
 process.p = cms.Path(process.nano_)
