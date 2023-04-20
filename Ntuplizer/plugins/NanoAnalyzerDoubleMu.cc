@@ -34,7 +34,6 @@
 // Utilities
 #include "../interface/helperfunc.h"
 #include "../interface/MyStruct.h"
-//#include "../interface/KinVtxFitter.h"  
 
 
 //*****************************
@@ -609,30 +608,7 @@ void NanoAnalyzerDoubleMu::analyze(const edm::Event& iEvent, const edm::EventSet
   // std::cout << "Offline1: " << reco_m1_pt << " " << reco_m1_eta << " " << reco_m1_phi << std::endl;
   // std::cout << "Offline2: " << reco_m2_pt << " " << reco_m2_eta << " " << reco_m2_phi << std::endl;
 
-
-  // ------------------------------------------------------
-  /*
-  // Kinematic fit
-  const reco::TransientTrack muon1TT((*(muoncollection[mcidx_m1].bestTrack())),&bField);  
-  const reco::TransientTrack muon2TT((*(muoncollection[mcidx_m2].bestTrack())),&bField);
-  KinVtxFitter fitter(
-		      { muon1TT, muon2TT },
-		      { muoncollection[mcidx_m1].mass(), muoncollection[mcidx_m2].mass() }, 
-		      { 0.0000001, 0.0000001 }
-		      );
-  if ( !fitter.success() ) return;
-  hist->Fill(6);
-
-  KinematicState fitted_cand = fitter.fitted_candidate();
-  TVector3 DiMuFitted(fitted_cand.globalMomentum().x(),
-		      fitted_cand.globalMomentum().y(),
-		      fitted_cand.globalMomentum().z());
-  Jpsi_fit_pt    = DiMuFitted.Pt();
-  Jpsi_fit_eta   = DiMuFitted.Eta();
-  Jpsi_fit_phi   = DiMuFitted.Phi();
-  Jpsi_fit_mass  = fitted_cand.mass();
-  Jpsi_fit_vprob = fitter.prob();
-  */
+  // Kin fit
   const reco::TransientTrack muon1TT((*(muoncollection[mcidx_m1].bestTrack())),&bField);  
   const reco::TransientTrack muon2TT((*(muoncollection[mcidx_m2].bestTrack())),&bField);
   KinematicParticleFactoryFromTransientTrack pFactory;
@@ -656,7 +632,6 @@ void NanoAnalyzerDoubleMu::analyze(const edm::Event& iEvent, const edm::EventSet
   Jpsi_fit_phi   = jpsi_part->currentState().globalMomentum().phi();
   Jpsi_fit_mass  = jpsi_part->currentState().mass();
   Jpsi_fit_vprob = TMath::Prob(jpsi_part->chiSquared(), jpsi_part->degreesOfFreedom());
-  // ------------------------------------------------------
 
 
   // Match analysis HLT / offline
