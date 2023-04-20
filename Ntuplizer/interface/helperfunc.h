@@ -197,7 +197,7 @@ class helperfunc{
   float mass_B0 = 5.27963;
   float mass_Bc = 6.2749;
   float mass_electron = 0.000511;
-
+  float mass_muon = 0.1056583;
   
 
 
