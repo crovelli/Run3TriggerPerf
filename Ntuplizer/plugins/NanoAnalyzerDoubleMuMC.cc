@@ -120,15 +120,15 @@ using namespace std;
 
 #ifndef CMSSW12plus
 // Run 1 and 2
-class NanoAnalyzerMC : public edm::EDAnalyzer
+class NanoAnalyzerDoubleMuMC : public edm::EDAnalyzer
 #else
 // Run 3
-class NanoAnalyzerMC : public edm::one::EDAnalyzer<>
+class NanoAnalyzerDoubleMuMC : public edm::one::EDAnalyzer<>
 #endif
 {
 public:
-  explicit NanoAnalyzerMC(const edm::ParameterSet&);
-  ~NanoAnalyzerMC();
+  explicit NanoAnalyzerDoubleMuMC(const edm::ParameterSet&);
+  ~NanoAnalyzerDoubleMuMC();
 
   static void fillDescriptions(edm::ConfigurationDescriptions & descriptions);
 
@@ -235,7 +235,7 @@ private:
 
 }; // end of class member
 
-NanoAnalyzerMC::NanoAnalyzerMC(const edm::ParameterSet& iConfig) {
+NanoAnalyzerDoubleMuMC::NanoAnalyzerDoubleMuMC(const edm::ParameterSet& iConfig) {
   muonToken_ = consumes<pat::MuonCollection>(iConfig.getParameter<edm::InputTag>("muons"));
 
   verticeToken_ = consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("vertices"));
@@ -254,9 +254,9 @@ NanoAnalyzerMC::NanoAnalyzerMC(const edm::ParameterSet& iConfig) {
 
 } // end of constructor
 
-NanoAnalyzerMC::~NanoAnalyzerMC() { }
+NanoAnalyzerDoubleMuMC::~NanoAnalyzerDoubleMuMC() { }
 
-void NanoAnalyzerMC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+void NanoAnalyzerDoubleMuMC::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
   reset();
   
@@ -632,25 +632,25 @@ void NanoAnalyzerMC::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 
   return;
 
-} //NanoAnalyzerMC::analyze ends
+} //NanoAnalyzerDoubleMuMC::analyze ends
 
 
 //**************************************************
 //************* additional methods *****************
 //**************************************************
 
-void NanoAnalyzerMC::beginJob(const edm::ParameterSet& iConfig) { }
+void NanoAnalyzerDoubleMuMC::beginJob(const edm::ParameterSet& iConfig) { }
 
-void NanoAnalyzerMC::beginRun(const edm::Run &iRun, const edm::EventSetup &iStp) { }
+void NanoAnalyzerDoubleMuMC::beginRun(const edm::Run &iRun, const edm::EventSetup &iStp) { }
 
-void NanoAnalyzerMC::fillDescriptions(edm::ConfigurationDescriptions & descriptions)  { }
+void NanoAnalyzerDoubleMuMC::fillDescriptions(edm::ConfigurationDescriptions & descriptions)  { }
 
-void NanoAnalyzerMC::endRun(edm::Run const&, edm::EventSetup const&) { }
+void NanoAnalyzerDoubleMuMC::endRun(edm::Run const&, edm::EventSetup const&) { }
 
-void NanoAnalyzerMC::endJob() { }
+void NanoAnalyzerDoubleMuMC::endJob() { }
 
 // branch title creation
-void NanoAnalyzerMC::createBranch() { 
+void NanoAnalyzerDoubleMuMC::createBranch() { 
 
   tree_->Branch("run", &run, "run/i");
   tree_->Branch("event", &event, "event/l");
@@ -711,7 +711,7 @@ void NanoAnalyzerMC::createBranch() {
   tree_->Branch("Jpsi_muonsDr",     &Jpsi_muonsDr );
 }
 
-void NanoAnalyzerMC::reset(void){
+void NanoAnalyzerDoubleMuMC::reset(void){
 
   run = -1;
   event = -1;
@@ -778,4 +778,4 @@ void NanoAnalyzerMC::reset(void){
   dimuobj2_phi = -999.;
 }
 
-DEFINE_FWK_MODULE(NanoAnalyzerMC);
+DEFINE_FWK_MODULE(NanoAnalyzerDoubleMuMC);
