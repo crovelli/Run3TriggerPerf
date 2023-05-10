@@ -1,17 +1,24 @@
 # Trigger studies for Run3
-# cfgs are for 2022 run
+
+cfgs are for 2022 run
 
 # Setup
 cmsrel CMSSW_12_4_3
+
 cd $CMSSW_BASE/src
+
 cmsenv
+
 git clone git@github.com:crovelli/Run3TriggerPerf.git
+
 git checkout -b run2022
+
 cd Run3TriggerPerf/Ntuplizer/
+
 scram b -j 8
 
 
-
+# Code
 Double Electron using doubleEG L1: 
 plugins/NanoAnalyzer.cc
 nanoanalyzercrab_cfg_22_DoubleEle.py
