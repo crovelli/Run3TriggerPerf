@@ -19,7 +19,7 @@ scram b -j 8
 
 
 # Code
-Double Electron using doubleEG L1: 
+* Double Electron using doubleEG L1: 
 
 plugins/NanoAnalyzer.cc
 
@@ -37,7 +37,7 @@ nanoanalyzercrab_cfg_22_DEusingSE.py
 crab_singleEle.py
 
 
-Double Muon
+* Double Muon
 
 plugins/NanoAnalyzerDoubleMu.cc 
 
@@ -46,7 +46,7 @@ nanoanalyzercrab_cfg_22_DM.py
 crab_doubleMu.py
 
 
-Double Muon, MC
+* Double Muon, MC
 
 plugins/NanoAnalyzerDoubleMuMC.cc
 
