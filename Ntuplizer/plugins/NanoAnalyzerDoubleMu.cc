@@ -299,9 +299,9 @@ void NanoAnalyzerDoubleMu::analyze(const edm::Event& iEvent, const edm::EventSet
     
     // Check if the reference trigger path fired
     if(trigNames.triggerName(i).find("HLT_Mu8_v")!= std::string::npos){             // chiara
-      //if(trigNames.triggerName(i).find("HLT_Mu20_v")!= std::string::npos){ 
-      //if(trigNames.triggerName(i).find("HLT_Mu24_v")!= std::string::npos){ 
-      //if(trigNames.triggerName(i).find("HLT_Mu27_v")!= std::string::npos){
+      // if(trigNames.triggerName(i).find("HLT_Mu20_v")!= std::string::npos){ 
+      // if(trigNames.triggerName(i).find("HLT_Mu24_v")!= std::string::npos){ 
+      // if(trigNames.triggerName(i).find("HLT_Mu27_v")!= std::string::npos){
       if(HLTtriggers_->accept(i)){
 	isTriggered = true;
 	refTriggerName=trigNames.triggerName(i);  
@@ -378,10 +378,12 @@ void NanoAnalyzerDoubleMu::analyze(const edm::Event& iEvent, const edm::EventSet
       int muObjNumber = -1;
       for (unsigned hh = 0; hh < obj.filterLabels().size(); ++hh){	
 
-	// std::cout << "Event: Filter " << hh << " => " << obj.filterLabels()[hh] << " ";
-	// std::cout << "" << std::endl;
+	//std::cout << "Event: Filter " << hh << " => " << obj.filterLabels()[hh] << " ";
+	//std::cout << "" << std::endl;
 	  
-	if(obj.filterLabels()[hh].find("hltL3fL1sMu5L1f0L2f5L3Filtered8") != std::string::npos) {  // chiara
+
+	if(obj.filterLabels()[hh].find("hltL3fL1sMu5L1f0L2f5L3Filtered8") != std::string::npos) {  // chiara  HLT_Mu8
+	  // if(obj.filterLabels()[hh].find("hltL3fL1sMu18L1f0L2f10QL3Filtered20Q") != std::string::npos) {  // chiara HLT_Mu20
 	  muObjNumber = hh;
 	}
       }
