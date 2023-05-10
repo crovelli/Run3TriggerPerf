@@ -52,7 +52,7 @@ process.TFileService = cms.Service("TFileService",
                                    )
 
 # Process the analyzer
-process.nano_ = cms.EDAnalyzer('NanoAnalyzerMC',
+process.nano_ = cms.EDAnalyzer('NanoAnalyzerDoubleMuMC',
                               muons = cms.InputTag("slimmedMuons"),
                               vertices = cms.InputTag("offlineSlimmedPrimaryVertices"), 
                               HLT = cms.InputTag("TriggerResults","","HLT"),
