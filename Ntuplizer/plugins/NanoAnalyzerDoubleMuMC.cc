@@ -201,15 +201,25 @@ private:
   float  Jpsi_m2_genMatchDR;
   //
   int DoubleMu_fired;
-  float mu1_matchedDiMu_dR  = 0;
-  float mu2_matchedDiMu_dR  = 0;
-  float mu1_matchedDiMu_pt  = 0;
-  float mu2_matchedDiMu_pt  = 0;
-  float mu1_matchedDiMu_eta = 0;
-  float mu2_matchedDiMu_eta = 0;
-  float mu1_matchedDiMu_phi = 0;
-  float mu2_matchedDiMu_phi = 0;
+  float mu1_matchedDiMu_dR  = 99.;
+  float mu2_matchedDiMu_dR  = 99.;
+  float mu1_matchedDiMu_pt  = 99.;
+  float mu2_matchedDiMu_pt  = 99.;
+  float mu1_matchedDiMu_eta = 99.;
+  float mu2_matchedDiMu_eta = 99.;
+  float mu1_matchedDiMu_phi = 99.;
+  float mu2_matchedDiMu_phi = 99.;
   //
+  int L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4;
+  int L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6;
+  int L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6;
+  int L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5;
+  int L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4;
+  int L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4;
+  int L1_DoubleMu4p5_SQ_OS_dR_Max1p2;
+  int L1_DoubleMu4_SQ_OS_dR_Max1p2;
+  int L1_OR;
+  // 
   float  Jpsi_nonfit_pt;
   float  Jpsi_nonfit_eta;
   float  Jpsi_nonfit_phi;
@@ -292,13 +302,14 @@ void NanoAnalyzerDoubleMuMC::analyze(const edm::Event& iEvent, const edm::EventS
   std::vector<pat::Muon> muoncollection; 
   muoncollection.clear();
   
+
   // Offline muons
   for(size_t imuon = 0; imuon < muons_->size(); imuon++){
     const pat::Muon & muon = (*muons_)[imuon];
 
     // Offline cuts
-    if(muon.pt() < 2.5) continue;
-    if(fabs(muon.eta()) > 2.4) continue;
+    if(muon.pt() < 2.5) continue;        
+    if(fabs(muon.eta()) > 2.6) continue;     
     if(!(muon.track().isNonnull())) continue;
     
     // This is to further process 
@@ -348,6 +359,19 @@ void NanoAnalyzerDoubleMuMC::analyze(const edm::Event& iEvent, const edm::EventS
   hist->Fill(2);
 
 
+  // Offline muons
+  float reco_m1_pt  = muoncollection[mcidx_m1].pt(); 
+  float reco_m1_eta = muoncollection[mcidx_m1].eta(); 
+  float reco_m1_phi = muoncollection[mcidx_m1].phi(); 
+  float reco_m2_pt  = muoncollection[mcidx_m2].pt(); 
+  float reco_m2_eta = muoncollection[mcidx_m2].eta(); 
+  float reco_m2_phi = muoncollection[mcidx_m2].phi(); 
+  TVector3 mu1TV3, mu2TV3;
+  mu1TV3.SetPtEtaPhi( reco_m1_pt, reco_m1_eta, reco_m1_phi );
+  mu2TV3.SetPtEtaPhi( reco_m2_pt, reco_m2_eta, reco_m2_phi );
+
+
+
   // Match with gen muon
   std::vector<float> genMatchPt(2, -99);
   std::vector<float> genMatchEta(2, -99);
@@ -369,18 +393,11 @@ void NanoAnalyzerDoubleMuMC::analyze(const edm::Event& iEvent, const edm::EventS
 
       pat::PackedGenParticle genp = (*packedgenparticles_)[igenp];
 
-      //std::cout << "igenp = " << igenp << ", id = " << genp.pdgId() << std::endl;
-      //const reco::Candidate * mom = genp.mother(0);
-      //if (mom) std::cout << mom->pdgId() << std::endl;
-
       if (abs(genp.pdgId()) != 13) continue;
       genpartTV3.SetPtEtaPhi( genp.pt(), genp.eta(), genp.phi() );
 
-      //std::cout << "MUONE = " << igenp << ", id = " << genp.pdgId() << std::endl;
-      //if (mom) std::cout << "MUM-MU = " << mom->pdgId() << std::endl;
-
       Float_t deltaR = fabs(muTV3.DeltaR(genpartTV3));
-      if (deltaR<0.3 && deltaR < best_match_dR ){  
+      if (deltaR<0.1 && deltaR < best_match_dR ){  
 	best_match_dR = deltaR;
 	genMatchPt[imu]  = genpartTV3.Pt(); 
 	genMatchEta[imu] = genpartTV3.Eta(); 
@@ -394,7 +411,7 @@ void NanoAnalyzerDoubleMuMC::analyze(const edm::Event& iEvent, const edm::EventS
   // Reconstruct and store Jpsi gen pt,eta,phi,mass
   TLorentzVector tlv_gen_m1;
   TLorentzVector tlv_gen_m2;
-  if ( (genMatchPt[0]>0.) && (genMatchPt[1]>0.) && (genMatchPt[0]!=genMatchPt[1]) ){
+  if ( (genMatchPt[0]>=0.) && (genMatchPt[1]>=0.) && (genMatchPt[0]!=genMatchPt[1]) ){
     tlv_gen_m1.SetPtEtaPhiM(genMatchPt[0], genMatchEta[0], genMatchPhi[0], aux.mass_muon);
     tlv_gen_m2.SetPtEtaPhiM(genMatchPt[1], genMatchEta[1], genMatchPhi[1], aux.mass_muon);
 
@@ -415,7 +432,10 @@ void NanoAnalyzerDoubleMuMC::analyze(const edm::Event& iEvent, const edm::EventS
     std::string DoubleMuObjName  = "hltDoubleMu43LowMassL3Filtered";
     
     // Loop over trigger objects matching the dimuon path 
+    int theHLTobj=-1;
+    vector<int> idxHLTobj;
     for (pat::TriggerObjectStandAlone obj : *triggerObjects) {
+      theHLTobj++;
       
       // check if this obj comes from the wanted di-muon path
       obj.unpackPathNames(trigNames);
@@ -423,139 +443,87 @@ void NanoAnalyzerDoubleMuMC::analyze(const edm::Event& iEvent, const edm::EventS
       std::vector<std::string> pathNamesAll = obj.pathNames(false);
       bool isPathExist = false;
       for (unsigned h = 0, n = pathNamesAll.size(); h < n; ++h) {
-	// std::cout << "event " << event << " => path " << h << " => " << pathNamesAll[h] << std::endl;
 	if(pathNamesAll[h].find(DoubleMuTrigName)!= std::string::npos) {
 	  isPathExist = true;   
-	  // std::cout << "event " << event << " => found" << std::endl;
 	}
       }
       if(!isPathExist) continue;
-	
-      // std::cout << "ok, this object matches our dimu path " << DoubleMuTrigName << std::endl;
-	
-      // check if the object is from the correct filter
+
+      // vector with objects coming from the correct HLT filter
+      bool okMatched=false;
       for (unsigned hh = 0; hh < obj.filterLabels().size(); ++hh){	
-	// std::cout << "event " << event << " => hh = " << hh << ", obj.filterLabels()[hh] = " << obj.filterLabels()[hh] << std::endl;
-	if(obj.filterLabels()[hh].find(DoubleMuObjName) != std::string::npos) {
-	  if (dimuobj1_pt<0) {
-	    dimuobj1_pt  = obj.pt();
-	    dimuobj1_eta = obj.eta();
-	    dimuobj1_phi = obj.phi();
-	  } else if (dimuobj2_pt<0) {
-	    dimuobj2_pt  = obj.pt();
-	    dimuobj2_eta = obj.eta();
-	    dimuobj2_phi = obj.phi();
-	  }
-	}
+	if(obj.filterLabels()[hh].find(DoubleMuObjName) != std::string::npos) { okMatched=true; }
       }
+      if (!okMatched) continue;
+      
+      idxHLTobj.push_back(theHLTobj);
     }
+
+    // Build online object pairs which satisfy the trigger requirements
+    int theHLTobj1=-1;
+    for (pat::TriggerObjectStandAlone obj1 : *triggerObjects) {
+      theHLTobj1++;
+
+      int theHLTobj2=-1;
+      for (pat::TriggerObjectStandAlone obj2 : *triggerObjects) {
+	theHLTobj2++;
+
+	// can not be the same
+	if (theHLTobj1==theHLTobj2) continue;
+	
+	// both selected above
+	bool found1 = std::find(idxHLTobj.begin(), idxHLTobj.end(), theHLTobj1) != idxHLTobj.end();
+	bool found2 = std::find(idxHLTobj.begin(), idxHLTobj.end(), theHLTobj2) != idxHLTobj.end();
+	if (!found1 || !found2) continue;
+	  	  
+	TLorentzVector tlv_obj1;
+	TLorentzVector tlv_obj2;
+	tlv_obj1.SetPtEtaPhiM(obj1.pt(), obj1.eta(), obj1.phi(), aux.mass_muon);
+	tlv_obj2.SetPtEtaPhiM(obj2.pt(), obj2.eta(), obj2.phi(), aux.mass_muon);
+
+	TVector3 tv3_obj1;
+	TVector3 tv3_obj2;
+	tv3_obj1.SetPtEtaPhi(obj1.pt(), obj1.eta(), obj1.phi());
+	tv3_obj2.SetPtEtaPhi(obj2.pt(), obj2.eta(), obj2.phi());
+
+	float objmass = (tlv_obj1+tlv_obj2).M();
+	float objpt   = (tlv_obj1+tlv_obj2).Pt();
+
+	if (objpt<4.9) continue;
+	if (objmass<0.2 || objmass>8.5) continue;
+
+	// match with offline muons
+	float deltaR11 = fabs(mu1TV3.DeltaR(tv3_obj1));
+	float deltaR21 = fabs(mu2TV3.DeltaR(tv3_obj1));
+	float deltaR12 = fabs(mu1TV3.DeltaR(tv3_obj2));
+	float deltaR22 = fabs(mu2TV3.DeltaR(tv3_obj2));
+	
+	if (deltaR11<0.1 && deltaR11<deltaR12 && deltaR11<mu1_matchedDiMu_dR && deltaR22<0.1 && deltaR22<deltaR21 && deltaR22<mu2_matchedDiMu_dR) { 
+	  mu1_matchedDiMu_dR  = deltaR11;
+	  mu2_matchedDiMu_dR  = deltaR22;
+	  mu1_matchedDiMu_pt  = obj1.pt();
+	  mu2_matchedDiMu_pt  = obj2.pt();
+	  mu1_matchedDiMu_eta = obj1.eta();
+	  mu2_matchedDiMu_eta = obj2.eta();
+	  mu1_matchedDiMu_phi = obj1.phi();
+	  mu2_matchedDiMu_phi = obj2.phi();
+	}
+	if (deltaR12<0.1 && deltaR12<deltaR11 && deltaR12<mu1_matchedDiMu_dR && deltaR21<0.1 && deltaR21<deltaR22 && deltaR21<mu2_matchedDiMu_dR) {
+	  mu1_matchedDiMu_dR  = deltaR12;
+	  mu2_matchedDiMu_dR  = deltaR21;
+	  mu1_matchedDiMu_pt  = obj2.pt();
+	  mu2_matchedDiMu_pt  = obj1.pt();
+	  mu1_matchedDiMu_eta = obj2.eta();
+	  mu2_matchedDiMu_eta = obj1.eta();
+	  mu1_matchedDiMu_phi = obj2.phi();
+	  mu2_matchedDiMu_phi = obj1.phi();
+	}
+	
+      } // Loop over trigger objects
+    }   // Loop over trigger objects   
+
   } // path fired
 
-
-  // Offline muons
-  float reco_m1_pt  = muoncollection[mcidx_m1].pt(); 
-  float reco_m1_eta = muoncollection[mcidx_m1].eta(); 
-  float reco_m1_phi = muoncollection[mcidx_m1].phi(); 
-  float reco_m2_pt  = muoncollection[mcidx_m2].pt(); 
-  float reco_m2_eta = muoncollection[mcidx_m2].eta(); 
-  float reco_m2_phi = muoncollection[mcidx_m2].phi(); 
-  TVector3 mu1TV3, mu2TV3;
-  mu1TV3.SetPtEtaPhi( reco_m1_pt, reco_m1_eta, reco_m1_phi );
-  mu2TV3.SetPtEtaPhi( reco_m2_pt, reco_m2_eta, reco_m2_phi );
-
-
-  // Match HLT / offline
-  float mu11_matchedDiMu_dR  =  999.;
-  float mu11_matchedDiMu_pt  = -999.;
-  float mu11_matchedDiMu_eta = -999.;
-  float mu11_matchedDiMu_phi = -999.;
-  //
-  float mu21_matchedDiMu_dR  =  999.;
-  float mu21_matchedDiMu_pt  = -999.;
-  float mu21_matchedDiMu_eta = -999.;
-  float mu21_matchedDiMu_phi = -999.;
-  //
-  float mu12_matchedDiMu_dR  =  999.;
-  float mu12_matchedDiMu_pt  = -999.;
-  float mu12_matchedDiMu_eta = -999.;
-  float mu12_matchedDiMu_phi = -999.;
-  //
-  float mu22_matchedDiMu_dR  =  999.;
-  float mu22_matchedDiMu_pt  = -999.;
-  float mu22_matchedDiMu_eta = -999.;
-  float mu22_matchedDiMu_phi = -999.;
-  if (dimuobj1_pt>=0) {
-    float obj1_pt  = dimuobj1_pt;
-    float obj1_eta = dimuobj1_eta;
-    float obj1_phi = dimuobj1_phi;
-    TVector3 obj1TV3;
-    obj1TV3.SetPtEtaPhi( obj1_pt, obj1_eta, obj1_phi );
-    Float_t deltaR11 = fabs(mu1TV3.DeltaR(obj1TV3));
-    Float_t deltaR21 = fabs(mu2TV3.DeltaR(obj1TV3));
-    if (deltaR11<0.3) {
-      mu11_matchedDiMu_dR  = deltaR11;
-      mu11_matchedDiMu_pt  = dimuobj1_pt;
-      mu11_matchedDiMu_eta = dimuobj1_eta;
-      mu11_matchedDiMu_phi = dimuobj1_phi;
-      // std::cout << "Ok match offline1 / online1 " << std::endl;
-    }
-    if (deltaR21<0.3) {
-      mu21_matchedDiMu_dR  = deltaR21;
-      mu21_matchedDiMu_pt  = dimuobj1_pt;
-      mu21_matchedDiMu_eta = dimuobj1_eta;
-      mu21_matchedDiMu_phi = dimuobj1_phi;
-      // std::cout << "Ok match offline2 / online1 " << std::endl;
-    }
-  }
-
-  if (dimuobj2_pt>=0) {
-    float obj2_pt  = dimuobj2_pt;
-    float obj2_eta = dimuobj2_eta;
-    float obj2_phi = dimuobj2_phi;
-    TVector3 obj2TV3;
-    obj2TV3.SetPtEtaPhi( obj2_pt, obj2_eta, obj2_phi );
-    Float_t deltaR12 = fabs(mu1TV3.DeltaR(obj2TV3));
-    Float_t deltaR22 = fabs(mu2TV3.DeltaR(obj2TV3));
-    if (deltaR12<0.3) {
-      mu12_matchedDiMu_dR  = deltaR12; 
-      mu12_matchedDiMu_pt  = dimuobj2_pt;
-      mu12_matchedDiMu_eta = dimuobj2_eta;
-      mu12_matchedDiMu_phi = dimuobj2_phi;
-      // std::cout << "Ok match offline1 / online2 " << std::endl;
-    }
-    if (deltaR22<0.3) {
-      mu22_matchedDiMu_dR  = deltaR22; 
-      mu22_matchedDiMu_pt  = dimuobj2_pt;
-      mu22_matchedDiMu_eta = dimuobj2_eta;
-      mu22_matchedDiMu_phi = dimuobj2_phi;
-      // std::cout << "Ok match offline2 / online2 " << std::endl;
-    }
-  }
-
-  if (mu11_matchedDiMu_dR<mu12_matchedDiMu_dR) {
-    mu1_matchedDiMu_dR  = mu11_matchedDiMu_dR;
-    mu1_matchedDiMu_pt  = mu11_matchedDiMu_pt;
-    mu1_matchedDiMu_eta = mu11_matchedDiMu_eta;
-    mu1_matchedDiMu_phi = mu11_matchedDiMu_phi;
-    // std::cout << "Ok match offline1 / online1 " << std::endl;
-  } else {
-    mu1_matchedDiMu_dR  = mu12_matchedDiMu_dR;
-    mu1_matchedDiMu_pt  = mu12_matchedDiMu_pt;
-    mu1_matchedDiMu_eta = mu12_matchedDiMu_eta;
-    mu1_matchedDiMu_phi = mu12_matchedDiMu_phi;
-  }
-  if (mu21_matchedDiMu_dR<mu22_matchedDiMu_dR) {
-    mu2_matchedDiMu_dR  = mu21_matchedDiMu_dR;
-    mu2_matchedDiMu_pt  = mu21_matchedDiMu_pt;
-    mu2_matchedDiMu_eta = mu21_matchedDiMu_eta;
-    mu2_matchedDiMu_phi = mu21_matchedDiMu_phi;
-    // std::cout << "Ok match offline1 / online1 " << std::endl;
-  } else {
-    mu2_matchedDiMu_dR  = mu22_matchedDiMu_dR;
-    mu2_matchedDiMu_pt  = mu22_matchedDiMu_pt;
-    mu2_matchedDiMu_eta = mu22_matchedDiMu_eta;
-    mu2_matchedDiMu_phi = mu22_matchedDiMu_phi;
-  }
 
 
   // Match L1 / offline
@@ -567,29 +535,109 @@ void NanoAnalyzerDoubleMuMC::analyze(const edm::Event& iEvent, const edm::EventS
   float bestMatchM2_phi = -99.;
   float bestMatchM2_pt  = -99.;
   float bestMatchM2_dR  = 999.;
+  
   const auto &l1MU = iEvent.get(l1MU_); 
-  for (l1t::MuonBxCollection::const_iterator it = l1MU.begin(0); it != l1MU.end(0); it++) {
-    pat::TriggerObjectStandAlone l1obj(it->p4());
-    
-    TVector3 l1objTV3;
-    l1objTV3.SetPtEtaPhi( it->pt(), it->eta(), it->phi() );
-    Float_t deltaRM1 = fabs(mu1TV3.DeltaR(l1objTV3));
-    Float_t deltaRM2 = fabs(mu2TV3.DeltaR(l1objTV3));
-    
-    if (deltaRM1<bestMatchM1_dR){
-      bestMatchM1_eta  = it->eta(); 
-      bestMatchM1_phi  = it->phi(); 
-      bestMatchM1_pt   = it->pt();    
-      bestMatchM1_dR   = deltaRM1;
-    }
-    if (deltaRM2<bestMatchM2_dR){
-      bestMatchM2_eta  = it->eta(); 
-      bestMatchM2_phi  = it->phi(); 
-      bestMatchM2_pt   = it->pt(); 
-      bestMatchM2_dR   = deltaRM2;
-    }
-  }
+  for (l1t::MuonBxCollection::const_iterator it1 = l1MU.begin(0); it1 != l1MU.end(0); it1++) {
+    for (l1t::MuonBxCollection::const_iterator it2 = l1MU.begin(0); it2 != l1MU.end(0); it2++) {
 
+      // can not be the same
+      if (it1==it2) continue;
+
+      // L1 candidate quality
+      // chiara, new
+      int obj1qual = it1->hwQual();
+      int obj2qual = it2->hwQual();
+      if (obj1qual<12) continue;
+      if (obj2qual<12) continue;
+
+      // infos propagated at vtx (default is at mu chambers)
+      TLorentzVector tlv_obj1;
+      TLorentzVector tlv_obj2;
+      tlv_obj1.SetPtEtaPhiM(it1->pt(), it1->etaAtVtx(), it1->phiAtVtx(), aux.mass_muon);
+      tlv_obj2.SetPtEtaPhiM(it2->pt(), it2->etaAtVtx(), it2->phiAtVtx(), aux.mass_muon);
+
+      TVector3 tv3_obj1;
+      TVector3 tv3_obj2;
+      tv3_obj1.SetPtEtaPhi(it1->pt(), it1->etaAtVtx(), it1->phiAtVtx());
+      tv3_obj2.SetPtEtaPhi(it2->pt(), it2->etaAtVtx(), it2->phiAtVtx());
+      
+      float q_obj1 = it1->charge();
+      float q_obj2 = it2->charge();
+
+      float deltaR   = fabs(tv3_obj1.DeltaR(tv3_obj2));
+      float deltaEta = fabs(tv3_obj1.Eta()-(tv3_obj2.Eta()));
+
+      // Bool for each L1 seed considered in the OR 
+      // L1SeedsLogicalExpression = cms.string( 
+      // "L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4 OR 
+      // L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 OR 
+      // L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 OR 
+      // L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 OR
+      // L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4 OR 
+      // L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4 OR 
+      // L1_DoubleMu4p5_SQ_OS_dR_Max1p2 OR L1_DoubleMu4_SQ_OS_dR_Max1p2" ),
+
+      bool theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4   = (it1->pt()>3) && (it2->pt()>3) && (fabs(it1->etaAtVtx())<2.0) && (fabs(it2->etaAtVtx())<2.0) && (q_obj1*q_obj2<0) && deltaR<1.4;
+      bool theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 = (fabs(it1->etaAtVtx())<2.0) && (fabs(it2->etaAtVtx())<2.0) && (q_obj1*q_obj2<0) && deltaEta<1.6;
+      bool theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 = (fabs(it1->etaAtVtx())<1.4) && (fabs(it2->etaAtVtx())<1.4) && (q_obj1*q_obj2<0) && deltaEta<1.6;
+      bool theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 = (fabs(it1->etaAtVtx())<2.0) && (fabs(it2->etaAtVtx())<2.0) && (q_obj1*q_obj2<0) && deltaR<1.5;
+      bool theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4   = (fabs(it1->etaAtVtx())<1.4) && (fabs(it2->etaAtVtx())<1.4) && (q_obj1*q_obj2<0) && deltaR<1.4;
+      bool theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4   = (fabs(it1->etaAtVtx())<1.5) && (fabs(it2->etaAtVtx())<1.5) && (q_obj1*q_obj2<0) && deltaR<1.4;
+      bool theL1_DoubleMu4p5_SQ_OS_dR_Max1p2      = (it1->pt()>4.5) && (it2->pt()>4.5) && (q_obj1*q_obj2<0) && deltaR<1.2;
+      bool theL1_DoubleMu4_SQ_OS_dR_Max1p2        = (it1->pt()>4.0) && (it2->pt()>4.0) && (q_obj1*q_obj2<0) && deltaR<1.2;
+      bool theL1_OR = theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4 || theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 || theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 || theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 || theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4 || theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4 || theL1_DoubleMu4p5_SQ_OS_dR_Max1p2 || theL1_DoubleMu4_SQ_OS_dR_Max1p2;
+      
+      // Pass one of the seeds
+      if (theL1_OR!=1) continue;
+
+      // match with offline muons
+      float deltaR11 = fabs(mu1TV3.DeltaR(tv3_obj1));
+      float deltaR21 = fabs(mu2TV3.DeltaR(tv3_obj1));
+      float deltaR12 = fabs(mu1TV3.DeltaR(tv3_obj2));
+      float deltaR22 = fabs(mu2TV3.DeltaR(tv3_obj2));
+
+      if (deltaR11<0.3 && deltaR11<deltaR12 && deltaR11<bestMatchM1_dR && deltaR22<0.3 && deltaR22<deltaR21 && deltaR22<bestMatchM2_dR) { 
+	bestMatchM1_dR  = deltaR11;
+	bestMatchM2_dR  = deltaR22;
+	bestMatchM1_pt  = it1->pt();
+	bestMatchM2_pt  = it2->pt();
+	bestMatchM1_eta = it1->etaAtVtx();
+        bestMatchM2_eta = it2->etaAtVtx();
+	bestMatchM1_phi = it1->phiAtVtx();
+	bestMatchM2_phi = it2->phiAtVtx();
+	L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4   = theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4;
+	L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6;
+	L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 = theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6;
+	L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5;
+	L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4;
+	L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4;
+	L1_DoubleMu4p5_SQ_OS_dR_Max1p2      = theL1_DoubleMu4p5_SQ_OS_dR_Max1p2;
+	L1_DoubleMu4_SQ_OS_dR_Max1p2        = theL1_DoubleMu4_SQ_OS_dR_Max1p2;
+	L1_OR = theL1_OR;
+      }
+      if (deltaR12<0.3 && deltaR12<deltaR11 && deltaR12<bestMatchM1_dR && deltaR21<0.3 && deltaR21<deltaR22 && deltaR21<bestMatchM2_dR) {
+	bestMatchM1_dR  = deltaR12;
+        bestMatchM2_dR  = deltaR21;
+	bestMatchM1_pt  = it2->pt();
+        bestMatchM2_pt  = it1->pt();
+	bestMatchM1_eta = it2->etaAtVtx();
+	bestMatchM2_eta = it1->etaAtVtx();
+	bestMatchM1_phi = it2->phiAtVtx();
+	bestMatchM2_phi = it1->phiAtVtx();
+	L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4   = theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4;
+	L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6;
+	L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 = theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6;
+	L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5;
+	L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4;
+	L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4;
+	L1_DoubleMu4p5_SQ_OS_dR_Max1p2      = theL1_DoubleMu4p5_SQ_OS_dR_Max1p2;
+	L1_DoubleMu4_SQ_OS_dR_Max1p2        = theL1_DoubleMu4_SQ_OS_dR_Max1p2;
+	L1_OR = theL1_OR;
+      }
+    } // Loop over L1 candidates
+  }   // Loop over L1 candidates
+
+  
   // Infos about JPsi candidate
   Jpsi_m1_pt   = muoncollection[mcidx_m1].pt();
   Jpsi_m1_eta  = muoncollection[mcidx_m1].eta();
@@ -691,13 +739,22 @@ void NanoAnalyzerDoubleMuMC::createBranch() {
   tree_->Branch("Jpsi_m1_Dimu_pt",     &mu1_matchedDiMu_pt );
   tree_->Branch("Jpsi_m1_Dimu_eta",    &mu1_matchedDiMu_eta );
   tree_->Branch("Jpsi_m1_Dimu_phi",    &mu1_matchedDiMu_phi );
-
   tree_->Branch("Jpsi_m2_Dimu_dR",     &mu2_matchedDiMu_dR );
   tree_->Branch("Jpsi_m2_Dimu_pt",     &mu2_matchedDiMu_pt );
   tree_->Branch("Jpsi_m2_Dimu_eta",    &mu2_matchedDiMu_eta );
   tree_->Branch("Jpsi_m2_Dimu_phi",    &mu2_matchedDiMu_phi );
 
   tree_->Branch("DoubleMu_fired", &DoubleMu_fired );
+
+  tree_->Branch("L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4", &L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4 );
+  tree_->Branch("L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6", &L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 );
+  tree_->Branch("L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6", &L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 );
+  tree_->Branch("L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5", &L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 );
+  tree_->Branch("L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4", &L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4 );
+  tree_->Branch("L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4", &L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4 );
+  tree_->Branch("L1_DoubleMu4p5_SQ_OS_dR_Max1p2", &L1_DoubleMu4p5_SQ_OS_dR_Max1p2 );
+  tree_->Branch("L1_DoubleMu4_SQ_OS_dR_Max1p2", &L1_DoubleMu4_SQ_OS_dR_Max1p2 );
+  tree_->Branch("L1_OR", &L1_OR );
 
   tree_->Branch("JpsiGen_pt"  , &JpsiGen_pt   );
   tree_->Branch("JpsiGen_eta" , &JpsiGen_eta  );
@@ -754,14 +811,24 @@ void NanoAnalyzerDoubleMuMC::reset(void){
   JpsiGen_mass = -99;
 
   DoubleMu_fired = 0.;
-  mu1_matchedDiMu_dR = 0.;
-  mu2_matchedDiMu_dR = 0.;
-  mu1_matchedDiMu_pt = 0.;
-  mu2_matchedDiMu_pt = 0.;
-  mu1_matchedDiMu_eta = 0.;
-  mu2_matchedDiMu_eta = 0.;
-  mu1_matchedDiMu_phi = 0.;
-  mu2_matchedDiMu_phi = 0.;
+  mu1_matchedDiMu_dR  = 99.;    
+  mu2_matchedDiMu_dR  = 99.;
+  mu1_matchedDiMu_pt  = 99.;
+  mu2_matchedDiMu_pt  = 99.;
+  mu1_matchedDiMu_eta = 99.;
+  mu2_matchedDiMu_eta = 99.;
+  mu1_matchedDiMu_phi = 99.;
+  mu2_matchedDiMu_phi = 99.;
+
+  L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4   = 99;
+  L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 = 99;
+  L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 = 99;
+  L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 = 99;
+  L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4   = 99;
+  L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4   = 99;
+  L1_DoubleMu4p5_SQ_OS_dR_Max1p2      = 99;
+  L1_DoubleMu4_SQ_OS_dR_Max1p2        = 99;
+  L1_OR = 99;
 
   Jpsi_nonfit_pt   = -99;
   Jpsi_nonfit_eta  = -99;
