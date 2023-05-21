@@ -148,7 +148,7 @@ private:
   EDGetTokenT<pat::MuonCollection> muonToken_;
   EDGetTokenT<edm::TriggerResults> triggerToken_;  
   EDGetTokenT<pat::TriggerObjectStandAloneCollection> triggerobjectToken_;
-  edm::EDGetTokenT<l1t::MuonBxCollection> l1MU_;      
+  edm::EDGetTokenT<BXVector<l1t::Muon>> l1MU_;      
   EDGetTokenT<pat::PackedGenParticleCollection> packedgenparticleToken_;
 
   Handle<pat::MuonCollection> muons_;
@@ -253,7 +253,7 @@ NanoAnalyzerDoubleMuMC::NanoAnalyzerDoubleMuMC(const edm::ParameterSet& iConfig)
   triggerToken_	= consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("HLT"));
   triggerobjectToken_ = consumes<pat::TriggerObjectStandAloneCollection>(iConfig.getParameter<edm::InputTag>("triggerobjects"));
 
-  l1MU_ = consumes<l1t::MuonBxCollection>(iConfig.getParameter<edm::InputTag>("l1MU"));
+  l1MU_ = consumes<BXVector<l1t::Muon>>(iConfig.getParameter<edm::InputTag>("l1MU"));      
 
   packedgenparticleToken_ = consumes<pat::PackedGenParticleCollection>(iConfig.getParameter<edm::InputTag>("packedgenparticles"));
 
@@ -535,16 +535,18 @@ void NanoAnalyzerDoubleMuMC::analyze(const edm::Event& iEvent, const edm::EventS
   float bestMatchM2_phi = -99.;
   float bestMatchM2_pt  = -99.;
   float bestMatchM2_dR  = 999.;
-  
-  const auto &l1MU = iEvent.get(l1MU_); 
-  for (l1t::MuonBxCollection::const_iterator it1 = l1MU.begin(0); it1 != l1MU.end(0); it1++) {
-    for (l1t::MuonBxCollection::const_iterator it2 = l1MU.begin(0); it2 != l1MU.end(0); it2++) {
+
+
+  edm::Handle<BXVector<l1t::Muon> > gmuons;   
+  iEvent.getByToken(l1MU_, gmuons);   
+
+  for (auto it1 = gmuons->begin(0); it1 != gmuons->end(0); ++it1) {
+    for (auto it2 = gmuons->begin(0); it2 != gmuons->end(0); ++it2) {
 
       // can not be the same
       if (it1==it2) continue;
 
       // L1 candidate quality
-      // chiara, new
       int obj1qual = it1->hwQual();
       int obj2qual = it2->hwQual();
       if (obj1qual<12) continue;
