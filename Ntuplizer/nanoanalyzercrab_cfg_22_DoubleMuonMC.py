@@ -57,7 +57,7 @@ process.nano_ = cms.EDAnalyzer('NanoAnalyzerDoubleMuMC',
                               vertices = cms.InputTag("offlineSlimmedPrimaryVertices"), 
                               HLT = cms.InputTag("TriggerResults","","HLT"),
                               triggerobjects = cms.InputTag("slimmedPatTrigger"),
-                              l1MU = cms.InputTag("gmtStage2Digis", "Muon"),  
+                              l1MU = cms.InputTag("gmtStage2Digis", "Muon", "RECO"),    
                               packedgenparticles = cms.InputTag("packedGenParticles"), 
 )
 
