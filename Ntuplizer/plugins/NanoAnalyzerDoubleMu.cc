@@ -698,20 +698,32 @@ void NanoAnalyzerDoubleMu::analyze(const edm::Event& iEvent, const edm::EventSet
       // L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4 OR 
       // L1_DoubleMu4p5_SQ_OS_dR_Max1p2 OR L1_DoubleMu4_SQ_OS_dR_Max1p2" ),
 
-      bool theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4   = (it1->pt()>3) && (it2->pt()>3) && (fabs(it1->etaAtVtx())<2.0) && (fabs(it2->etaAtVtx())<2.0) && (q_obj1*q_obj2<0) && deltaR<1.4;
-      bool theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 = (fabs(it1->etaAtVtx())<2.0) && (fabs(it2->etaAtVtx())<2.0) && (q_obj1*q_obj2<0) && deltaEta<1.6;
-      bool theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 = (fabs(it1->etaAtVtx())<1.4) && (fabs(it2->etaAtVtx())<1.4) && (q_obj1*q_obj2<0) && deltaEta<1.6;
-      bool theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 = (fabs(it1->etaAtVtx())<2.0) && (fabs(it2->etaAtVtx())<2.0) && (q_obj1*q_obj2<0) && deltaR<1.5;
-      bool theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4   = (fabs(it1->etaAtVtx())<1.4) && (fabs(it2->etaAtVtx())<1.4) && (q_obj1*q_obj2<0) && deltaR<1.4;
-      bool theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4   = (fabs(it1->etaAtVtx())<1.5) && (fabs(it2->etaAtVtx())<1.5) && (q_obj1*q_obj2<0) && deltaR<1.4;
-      bool theL1_DoubleMu4p5_SQ_OS_dR_Max1p2      = (it1->pt()>4.5) && (it2->pt()>4.5) && (q_obj1*q_obj2<0) && deltaR<1.2;
-      bool theL1_DoubleMu4_SQ_OS_dR_Max1p2        = (it1->pt()>4.0) && (it2->pt()>4.0) && (q_obj1*q_obj2<0) && deltaR<1.2;
+      bool theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4   = (it1->pt()>=3) && (it2->pt()>=3) && (fabs(it1->etaAtVtx())<=2.006) && (fabs(it2->etaAtVtx())<=2.006) && (q_obj1*q_obj2<0) && deltaR<=1.4;
+      bool theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 = (fabs(it1->etaAtVtx())<=2.006) && (fabs(it2->etaAtVtx())<=2.006) && (q_obj1*q_obj2<0) && deltaEta<=1.6;
+      bool theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 = (fabs(it1->etaAtVtx())<=1.408) && (fabs(it2->etaAtVtx())<=1.408) && (q_obj1*q_obj2<0) && deltaEta<=1.6;
+      bool theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 = (fabs(it1->etaAtVtx())<=2.006) && (fabs(it2->etaAtVtx())<=2.006) && (q_obj1*q_obj2<0) && deltaR<=1.5;
+      bool theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4   = (fabs(it1->etaAtVtx())<=1.408) && (fabs(it2->etaAtVtx())<=1.408) && (q_obj1*q_obj2<0) && deltaR<=1.4;
+      bool theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4   = (fabs(it1->etaAtVtx())<=1.506) && (fabs(it2->etaAtVtx())<=1.506) && (q_obj1*q_obj2<0) && deltaR<=1.4;
+      bool theL1_DoubleMu4p5_SQ_OS_dR_Max1p2      = (it1->pt()>=4.5) && (it2->pt()>=4.5) && (q_obj1*q_obj2<0) && deltaR<=1.2;
+      bool theL1_DoubleMu4_SQ_OS_dR_Max1p2        = (it1->pt()>=4.0) && (it2->pt()>=4.0) && (q_obj1*q_obj2<0) && deltaR<=1.2;
+
       bool theL1_OR = theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4 || theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 || theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 || theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 || theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4 || theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4 || theL1_DoubleMu4p5_SQ_OS_dR_Max1p2 || theL1_DoubleMu4_SQ_OS_dR_Max1p2;
       
       // Pass one of the seeds
       if (theL1_OR!=1) continue;
 
-      // match with offline muons
+      // This way we know if the L1 emulation works
+      L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4   = theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4;
+      L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6;
+      L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 = theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6;
+      L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5;
+      L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4;
+      L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4;
+      L1_DoubleMu4p5_SQ_OS_dR_Max1p2      = theL1_DoubleMu4p5_SQ_OS_dR_Max1p2;
+      L1_DoubleMu4_SQ_OS_dR_Max1p2        = theL1_DoubleMu4_SQ_OS_dR_Max1p2;
+      L1_OR = theL1_OR;
+
+      // This way we know if the L1 match with offline works
       float deltaR11 = fabs(mu1TV3.DeltaR(tv3_obj1));
       float deltaR21 = fabs(mu2TV3.DeltaR(tv3_obj1));
       float deltaR12 = fabs(mu1TV3.DeltaR(tv3_obj2));
@@ -726,15 +738,6 @@ void NanoAnalyzerDoubleMu::analyze(const edm::Event& iEvent, const edm::EventSet
         bestMatchM2_eta = it2->etaAtVtx();
 	bestMatchM1_phi = it1->phiAtVtx();
 	bestMatchM2_phi = it2->phiAtVtx();
-	L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4   = theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4;
-	L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6;
-	L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 = theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6;
-	L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5;
-	L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4;
-	L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4;
-	L1_DoubleMu4p5_SQ_OS_dR_Max1p2      = theL1_DoubleMu4p5_SQ_OS_dR_Max1p2;
-	L1_DoubleMu4_SQ_OS_dR_Max1p2        = theL1_DoubleMu4_SQ_OS_dR_Max1p2;
-	L1_OR = theL1_OR;
       }
       if (deltaR12<0.3 && deltaR12<deltaR11 && deltaR12<bestMatchM1_dR && deltaR21<0.3 && deltaR21<deltaR22 && deltaR21<bestMatchM2_dR) {
 	bestMatchM1_dR  = deltaR12;
@@ -745,15 +748,6 @@ void NanoAnalyzerDoubleMu::analyze(const edm::Event& iEvent, const edm::EventSet
 	bestMatchM2_eta = it1->etaAtVtx();
 	bestMatchM1_phi = it2->phiAtVtx();
 	bestMatchM2_phi = it1->phiAtVtx();
-	L1_DoubleMu3er2p0_SQ_OS_dR_Max1p4   = theL1_DoubleMu3er2p0_SQ_OS_dR_Max1p4;
-	L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p6;
-	L1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6 = theL1_DoubleMu0er1p4_OQ_OS_dEta_Max1p6;
-	L1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5 = theL1_DoubleMu0er2p0_SQ_OS_dEta_Max1p5;
-	L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p4_SQ_OS_dR_Max1p4;
-	L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4   = theL1_DoubleMu0er1p5_SQ_OS_dR_Max1p4;
-	L1_DoubleMu4p5_SQ_OS_dR_Max1p2      = theL1_DoubleMu4p5_SQ_OS_dR_Max1p2;
-	L1_DoubleMu4_SQ_OS_dR_Max1p2        = theL1_DoubleMu4_SQ_OS_dR_Max1p2;
-	L1_OR = theL1_OR;
       }
     } // Loop over L1 candidates
   }   // Loop over L1 candidates
