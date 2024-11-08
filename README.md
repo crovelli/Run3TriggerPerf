@@ -1,5 +1,5 @@
-# Run3TriggerPerf
-Run 3 trigger performance
+# Run 3 trigger performance
+# ------------------------------
 
 cmsrel CMSSW_12_4_11
 
