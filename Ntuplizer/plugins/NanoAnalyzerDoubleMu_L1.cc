@@ -117,10 +117,12 @@ private:
 
   float  Jpsi_m1_pt;
   float  Jpsi_m1_eta;
+  float  Jpsi_m1_abseta;
   float  Jpsi_m1_phi;
   int    Jpsi_m1_q;   
   float  Jpsi_m1_looseId;   
   float  Jpsi_m1_mediumId;
+  float  Jpsi_m1_tightId;
   //
   float  Jpsi_m1_bestL1pt;
   float  Jpsi_m1_bestL1eta;
@@ -129,11 +131,13 @@ private:
 
   float  Jpsi_m2_pt      ;
   float  Jpsi_m2_eta     ;
+  float  Jpsi_m2_abseta;
   float  Jpsi_m2_phi     ;
   int    Jpsi_m2_alsotag ;
   int    Jpsi_m2_q   ;   
   float  Jpsi_m2_looseId  ;
   float  Jpsi_m2_mediumId;
+  float  Jpsi_m2_tightId;
   // 
   float  Jpsi_m2_bestL1pt ;
   float  Jpsi_m2_bestL1eta ;
@@ -162,6 +166,8 @@ private:
   float  Jpsi_fit_mass;
   float  Jpsi_nonfit_mass;
   float  Jpsi_fit_vprob;
+  float  Jpsi_muonsDr;
+  float  Jpsi_muonsDz;
   
   // Not for tree, other variables declaration
   helperfunc aux;
@@ -205,10 +211,12 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
   iEvent.getByToken(triggerobjectToken_ , triggerObjects); 
   
   nvtx = vertices_->size();
-
   run = (iEvent.id()).run();
   event = (iEvent.id()).event();
 
+  // 1st PV 
+  const reco::Vertex &PV = vertices_->front(); 
+  
   // check if the reference trigger and/or the analysis trigger fired
   bool tagPathFired = false;
   const edm::TriggerNames& trigNames = iEvent.triggerNames(*HLTtriggers_);
@@ -485,7 +493,6 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
   // std::cout << "Offline1: " << reco_m1_pt << " " << reco_m1_eta << " " << reco_m1_phi << std::endl;
   // std::cout << "Offline2: " << reco_m2_pt << " " << reco_m2_eta << " " << reco_m2_phi << std::endl;
 
-
   // Kinematic fit
   const reco::TransientTrack muon1TT((*(muoncollection[mcidx_m1].bestTrack())),&bField);  
   const reco::TransientTrack muon2TT((*(muoncollection[mcidx_m2].bestTrack())),&bField);
@@ -504,7 +511,9 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
   Jpsi_fit_phi   = fitted_cand.globalMomentum().phi();
   Jpsi_fit_mass  = fitted_cand.mass();
   Jpsi_fit_vprob = fitter.prob();
-
+  Jpsi_muonsDr   = mu1TV3.DeltaR(mu2TV3);
+  Jpsi_muonsDz   = fabs(muoncollection[mcidx_m1].vz() - muoncollection[mcidx_m2].vz() );
+  
   // Match L1 / offline
   float bestMatchM1_eta = -99.;
   float bestMatchM1_phi = -99.;
@@ -540,10 +549,12 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
   // Infos about JPsi candidate
   Jpsi_m1_pt   = muoncollection[mcidx_m1].pt();
   Jpsi_m1_eta  = muoncollection[mcidx_m1].eta();
+  Jpsi_m1_abseta = fabs(muoncollection[mcidx_m1].eta());
   Jpsi_m1_phi  = muoncollection[mcidx_m1].phi();
   Jpsi_m1_q    = muoncollection[mcidx_m1].charge();
   Jpsi_m1_looseId  = muoncollection[mcidx_m1].isLooseMuon();
   Jpsi_m1_mediumId = muoncollection[mcidx_m1].isMediumMuon();
+  Jpsi_m1_tightId  = muoncollection[mcidx_m1].isTightMuon(PV);
   Jpsi_m1_bestL1pt   = bestMatchM1_pt;
   Jpsi_m1_bestL1eta  = bestMatchM1_eta;
   Jpsi_m1_bestL1phi  = bestMatchM1_phi;
@@ -551,11 +562,13 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
 
   Jpsi_m2_pt   = muoncollection[mcidx_m2].pt();
   Jpsi_m2_eta  = muoncollection[mcidx_m2].eta();
+  Jpsi_m2_abseta = fabs(muoncollection[mcidx_m2].eta());
   Jpsi_m2_phi  = muoncollection[mcidx_m2].phi();
   Jpsi_m2_alsotag = is_probe_also_tag;
   Jpsi_m2_q    = muoncollection[mcidx_m2].charge();
   Jpsi_m2_looseId  = muoncollection[mcidx_m2].isLooseMuon();
   Jpsi_m2_mediumId = muoncollection[mcidx_m2].isMediumMuon();
+  Jpsi_m2_tightId  = muoncollection[mcidx_m2].isTightMuon(PV);
   Jpsi_m2_bestL1pt  = bestMatchM2_pt;
   Jpsi_m2_bestL1eta = bestMatchM2_eta;
   Jpsi_m2_bestL1phi = bestMatchM2_phi;
@@ -622,10 +635,12 @@ void NanoAnalyzerDoubleMu_L1::createBranch() {
   // Offline
   tree_->Branch("Jpsi_m1_pt", &Jpsi_m1_pt );
   tree_->Branch("Jpsi_m1_eta", &Jpsi_m1_eta );
+  tree_->Branch("Jpsi_m1_abseta", &Jpsi_m1_abseta );
   tree_->Branch("Jpsi_m1_phi", &Jpsi_m1_phi );
   tree_->Branch("Jpsi_m1_q", &Jpsi_m1_q );
   tree_->Branch("Jpsi_m1_looseId"   , &Jpsi_m1_looseId    );
   tree_->Branch("Jpsi_m1_mediumId"  , &Jpsi_m1_mediumId   );
+  tree_->Branch("Jpsi_m1_tightId"   , &Jpsi_m1_tightId   );
   tree_->Branch("Jpsi_m1_bestL1pt",   &Jpsi_m1_bestL1pt   );
   tree_->Branch("Jpsi_m1_bestL1eta" , &Jpsi_m1_bestL1eta  );
   tree_->Branch("Jpsi_m1_bestL1phi" , &Jpsi_m1_bestL1phi  );
@@ -633,11 +648,13 @@ void NanoAnalyzerDoubleMu_L1::createBranch() {
 
   tree_->Branch("Jpsi_m2_pt", &Jpsi_m2_pt );
   tree_->Branch("Jpsi_m2_eta", &Jpsi_m2_eta );
+  tree_->Branch("Jpsi_m2_abseta", &Jpsi_m2_abseta );
   tree_->Branch("Jpsi_m2_phi", &Jpsi_m2_phi );
   tree_->Branch("Jpsi_m2_alsotag", &Jpsi_m2_alsotag );
   tree_->Branch("Jpsi_m2_q", &Jpsi_m2_q );
   tree_->Branch("Jpsi_m2_looseId"   , &Jpsi_m2_looseId  );
   tree_->Branch("Jpsi_m2_mediumId"  , &Jpsi_m2_mediumId   );
+  tree_->Branch("Jpsi_m2_tightId"   , &Jpsi_m2_tightId   );
   tree_->Branch("Jpsi_m2_bestL1pt",   &Jpsi_m2_bestL1pt );
   tree_->Branch("Jpsi_m2_bestL1eta" , &Jpsi_m2_bestL1eta );
   tree_->Branch("Jpsi_m2_bestL1phi" , &Jpsi_m2_bestL1phi );
@@ -669,6 +686,8 @@ void NanoAnalyzerDoubleMu_L1::createBranch() {
   tree_->Branch("Jpsi_fit_mass",    &Jpsi_fit_mass );
   tree_->Branch("Jpsi_nonfit_mass", &Jpsi_nonfit_mass );
   tree_->Branch("Jpsi_fit_vprob",   &Jpsi_fit_vprob );
+  tree_->Branch("Jpsi_muonsDr",     &Jpsi_muonsDr );
+  tree_->Branch("Jpsi_muonsDz",     &Jpsi_muonsDz );
 }
 
 void NanoAnalyzerDoubleMu_L1::reset(void){
@@ -679,10 +698,12 @@ void NanoAnalyzerDoubleMu_L1::reset(void){
 
   Jpsi_m1_pt = -99;
   Jpsi_m1_eta = -99;
+  Jpsi_m1_abseta = -99;
   Jpsi_m1_phi = -99;
   Jpsi_m1_q = -99;
   Jpsi_m1_looseId = -99;
   Jpsi_m1_mediumId = -99;
+  Jpsi_m1_tightId = -99;
   Jpsi_m1_bestL1pt = -99;
   Jpsi_m1_bestL1eta = -99;
   Jpsi_m1_bestL1phi = -99;
@@ -690,11 +711,13 @@ void NanoAnalyzerDoubleMu_L1::reset(void){
 
   Jpsi_m2_pt = -99;
   Jpsi_m2_eta = -99;
+  Jpsi_m2_abseta = -99;
   Jpsi_m2_phi = -99;
   Jpsi_m2_alsotag = -99;
   Jpsi_m2_q = -99;
   Jpsi_m2_looseId = -99;
   Jpsi_m2_mediumId = -99;
+  Jpsi_m2_tightId = -99;
   Jpsi_m2_bestL1pt = -99;
   Jpsi_m2_bestL1eta = -99;
   Jpsi_m2_bestL1phi = -99;
@@ -723,6 +746,8 @@ void NanoAnalyzerDoubleMu_L1::reset(void){
   Jpsi_fit_mass    = -99;
   Jpsi_nonfit_mass = -99;
   Jpsi_fit_vprob   = -99;
+  Jpsi_muonsDr     = -99;
+  Jpsi_muonsDz     = -99;
 }
 
 DEFINE_FWK_MODULE(NanoAnalyzerDoubleMu_L1);
