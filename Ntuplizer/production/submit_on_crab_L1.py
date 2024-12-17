@@ -21,7 +21,7 @@ config.Data.inputDBS = 'global'
 
 config.section_('JobType')
 config.JobType.pluginName = 'Analysis'
-config.JobType.psetName = './run_trigger_cfg.py'  ##########################
+config.JobType.psetName = './run_triggerL1_cfg.py'  ##########################
 config.JobType.allowUndistributedCMSSW = True
 
 config.section_('User')

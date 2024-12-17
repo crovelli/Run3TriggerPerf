@@ -127,6 +127,10 @@ private:
   float  Jpsi_m1_bestL1eta;
   float  Jpsi_m1_bestL1phi;
   float  Jpsi_m1_bestL1dR;
+  float  Jpsi_m1_bestHLTpt;
+  float  Jpsi_m1_bestHLTeta;
+  float  Jpsi_m1_bestHLTphi;
+  float  Jpsi_m1_bestHLTdR;
 
   float  Jpsi_m2_pt      ;
   float  Jpsi_m2_eta     ;
@@ -142,6 +146,10 @@ private:
   float  Jpsi_m2_bestL1eta ;
   float  Jpsi_m2_bestL1phi ;
   float  Jpsi_m2_bestL1dR ;
+  float  Jpsi_m2_bestHLTpt;
+  float  Jpsi_m2_bestHLTeta;
+  float  Jpsi_m2_bestHLTphi;
+  float  Jpsi_m2_bestHLTdR;
 
   float  Jpsi_m1_trgobj_pt      ;
   float  Jpsi_m1_trgobj_eta     ;
@@ -224,10 +232,8 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
 
   for (unsigned int i = 0, n = HLTtriggers_->size(); i < n; ++i) {
 
-    ///////std::cout << "Loop over all triggers: i = " << i << ", name = " << trigNames.triggerName(i) << ", fired = " << HLTtriggers_->accept(i) << std::endl;
-    
-    // Check if the tag trigger path fired
-    if(trigNames.triggerName(i).find("HLT_Mu8_v")!= std::string::npos){             // chiara
+    // Check if the reference trigger path fired
+    if(trigNames.triggerName(i).find("HLT_Mu8_v")!= std::string::npos){           
       if(HLTtriggers_->accept(i)){
 	tagPathFired = true;
 	tagTriggerName=trigNames.triggerName(i);  
@@ -243,18 +249,11 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
     }
   }
 
-  /*
-  std::cout << std::endl;
-  std::cout << "Ref trigger? " << tagPathFired << std::endl;
-  std::cout << "AN trigger? "  << probePathFired << std::endl;
-  std::cout << "probeTriggerName = " << probeTriggerName << std::endl;
-  std::cout << std::endl;
-  */
-
   // Reference path fired - skip otherwise
   if(!tagPathFired) return;    
   hist->Fill(2);
 
+  
 
   // Take the muons collection
   iEvent.getByToken(muonToken_ , muons_ );
@@ -278,9 +277,12 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
 
     // Offline cuts
     if (fabs(muon.eta()) > 2.4) continue;
+    if (fabs(muon.pt()) < 2.)   continue;
     if (!(muon.track().isNonnull())) continue;
     
-    // std::cout << "event = " << event << ", imuon = " << imuon << ", muon.pt() =  " << muon.pt() << std::endl;
+    TVector3 muTV3;
+    muTV3.SetPtEtaPhi( muon.pt(), muon.eta(), muon.phi() );
+    
 
     // Trigger matching
     bool trigObjMatchMu = false;                      // this offline muon matches a HLT mu-candidate
@@ -290,57 +292,34 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
     // Loop over trigger objects matching the reference path
     for (pat::TriggerObjectStandAlone obj : *triggerObjects) {
       
-      // consider only objects which match the ref path    
       obj.unpackPathNames(trigNames);
       obj.unpackFilterLabels(iEvent, *HLTtriggers_);
-      std::vector<std::string> pathNamesAll  = obj.pathNames(false);
+      
+      std::vector<std::string> pathNamesAll = obj.pathNames(false);
       bool isPathExist = false;
       for (unsigned h = 0, n = pathNamesAll.size(); h < n; ++h) {
 	if(pathNamesAll[h]==tagTriggerName) isPathExist = true;     
       }
       if(!isPathExist) continue;
-      
-      int muObjNumber = -1;
-      for (unsigned hh = 0; hh < obj.filterLabels().size(); ++hh){	
 
-	//std::cout << "Event: Filter " << hh << " => " << obj.filterLabels()[hh] << " ";
-	//std::cout << "" << std::endl;
-	  
-	if(obj.filterLabels()[hh].find("hltL3fL1sMu5L1f0L2f5L3Filtered8") != std::string::npos) {  // chiara  HLT_Mu8
-	  muObjNumber = hh;
-	}
-      }
-        
-      // here HLT obj vs reco muon candidates
-      TVector3 muTV3, objTV3;
-      muTV3.SetPtEtaPhi( muon.pt(), muon.eta(), muon.phi() );
-      objTV3.SetPtEtaPhi( obj.pt(), obj.eta(), obj.phi() );
-      Float_t deltaR = fabs(muTV3.DeltaR(objTV3));
-    
-      // here HLT-muon candidates
-      if (muObjNumber>=0) {
-	//std::cout<< "DeltaR = " << deltaR << std::endl;
-	//std::cout << "This is a muon HLT candidate" << endl;
-	if(deltaR < 0.3){    // chiara
+      // This is the match
+      if (obj.hasPathName(tagTriggerName, true, true)) {
+
+	// here HLT obj vs reco muon candidates
+	TVector3 objTV3;
+	objTV3.SetPtEtaPhi( obj.pt(), obj.eta(), obj.phi() );
+	Float_t deltaR = fabs(muTV3.DeltaR(objTV3));
+	if(deltaR < 0.3){   
 	  trigObjMatchMu = true;
 	  if (deltaR < best_match_dR){
 	    best_match_dR = deltaR;
 	    best_match_obj = obj;
 	  }
-	  //std::cout << "This object is matched with muon: deltaPhi = " << best_match_dR = " << best_match_dR << std::endl;
-	  //std::cout << "Offline: " << muon.pt() << " " << muon.eta() << " " << muon.phi() << std::endl;
-	  //std::cout << "HLT: " << obj.pt() << " " << obj.eta() << " " << obj.phi() << std::endl;
 	}
       }
 
-      //std::cout << "event = " << event << " : muObjNumber = " << muObjNumber << std::endl;
-      //std::cout << "trigObjMatchMu = " << trigObjMatchMu << std::endl;
-      //std::cout << "In objects loop, best_match_obj => " << best_match_obj.pt() << " " << best_match_obj.eta() << " " << best_match_obj.phi() << std::endl;
-      
     } // Loop over trigger object
     
-    // std::cout << "After objects loop, best_match_obj => " << best_match_obj.pt() << " " << best_match_obj.eta() << " " << best_match_obj.phi() << std::endl;
-
     
     // This is to further process 
     muoncollection.push_back(muon);
@@ -354,7 +333,6 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
 
   } // Loop over offline muons
 
-  // std::cout << "event = " << event << ", muoncollection.size() = " << muoncollection.size() << ", muonmatched.size() = " << muonmatched.size() << std::endl;
   
   if (muoncollection.size() < 2) return; 
   hist->Fill(3);
@@ -378,8 +356,6 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
       // at least 1 muon of the jpsi pair should match a trigger muon
       if ( muonmatched[im]<0 && muonmatched[jm]<0 ) continue;
       
-      // std::cout << "im = " << im << ", muonmatched[im] = " << muonmatched[im] << ", jm = " << jm << ", muonmatched[jm] = " << muonmatched[jm] << std::endl; 
-
       // match with trigger muon
       int this_mcidx_trgobj1 = -1;
       int this_mcidx_trgobj2 = -1;
@@ -489,9 +465,11 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
   TVector3 mu1TV3, mu2TV3;
   mu1TV3.SetPtEtaPhi( reco_m1_pt, reco_m1_eta, reco_m1_phi );
   mu2TV3.SetPtEtaPhi( reco_m2_pt, reco_m2_eta, reco_m2_phi );
-  // std::cout << "Offline1: " << reco_m1_pt << " " << reco_m1_eta << " " << reco_m1_phi << std::endl;
-  // std::cout << "Offline2: " << reco_m2_pt << " " << reco_m2_eta << " " << reco_m2_phi << std::endl;
-
+  //if (probePathFired) {
+  //std::cout << "Offline1: " << reco_m1_pt << " " << reco_m1_eta << " " << reco_m1_phi << std::endl;
+  //std::cout << "Offline2: " << reco_m2_pt << " " << reco_m2_eta << " " << reco_m2_phi << std::endl;
+  //}
+  
   // Kinematic fit
   const reco::TransientTrack muon1TT((*(muoncollection[mcidx_m1].bestTrack())),&bField);  
   const reco::TransientTrack muon2TT((*(muoncollection[mcidx_m2].bestTrack())),&bField);
@@ -524,27 +502,71 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
   float bestMatchM2_dR  = 999.;
   const auto &l1MU = iEvent.get(l1MU_); 
   for (l1t::MuonBxCollection::const_iterator it = l1MU.begin(0); it != l1MU.end(0); it++) {
-    pat::TriggerObjectStandAlone l1obj(it->p4());
     
     TVector3 l1objTV3;
-    l1objTV3.SetPtEtaPhi( it->pt(), it->eta(), it->phi() );
+    l1objTV3.SetPtEtaPhi( it->pt(), it->etaAtVtx(), it->phiAtVtx() );
     Float_t deltaRM1 = fabs(mu1TV3.DeltaR(l1objTV3));
     Float_t deltaRM2 = fabs(mu2TV3.DeltaR(l1objTV3));
     
     if (deltaRM1<bestMatchM1_dR){
-      bestMatchM1_eta  = it->eta(); 
-      bestMatchM1_phi  = it->phi(); 
+      bestMatchM1_eta  = it->etaAtVtx(); 
+      bestMatchM1_phi  = it->phiAtVtx(); 
       bestMatchM1_pt   = it->pt();    
       bestMatchM1_dR   = deltaRM1;
     }
     if (deltaRM2<bestMatchM2_dR){
-      bestMatchM2_eta  = it->eta(); 
-      bestMatchM2_phi  = it->phi(); 
+      bestMatchM2_eta  = it->etaAtVtx(); 
+      bestMatchM2_phi  = it->phiAtVtx(); 
       bestMatchM2_pt   = it->pt(); 
       bestMatchM2_dR   = deltaRM2;
     }
   }
 
+  // Match trigger objects of probe path with offline muons
+  float bestMatchHLTM1_eta = -99.;
+  float bestMatchHLTM1_phi = -99.;
+  float bestMatchHLTM1_pt  = -99.;
+  float bestMatchHLTM1_dR  = 999.;
+  float bestMatchHLTM2_eta = -99.;
+  float bestMatchHLTM2_phi = -99.;
+  float bestMatchHLTM2_pt  = -99.;
+  float bestMatchHLTM2_dR  = 999.;
+  for (pat::TriggerObjectStandAlone obj : *triggerObjects) {
+
+    obj.unpackPathNames(trigNames);
+    obj.unpackFilterLabels(iEvent, *HLTtriggers_);
+    
+    std::vector<std::string> pathNamesAll  = obj.pathNames(false);
+    bool isPathExist = false;
+    for (unsigned h = 0, n = pathNamesAll.size(); h < n; ++h) {
+      if(pathNamesAll[h]==probeTriggerName) isPathExist = true;     
+    }
+    if(!isPathExist) continue;
+
+    if (obj.hasPathName(probeTriggerName, true, true)) {
+      
+      TVector3 hltobjTV3;
+      hltobjTV3.SetPtEtaPhi( obj.pt(), obj.eta(), obj.phi() );
+      Float_t deltaRM1 = fabs(mu1TV3.DeltaR(hltobjTV3));
+      Float_t deltaRM2 = fabs(mu2TV3.DeltaR(hltobjTV3));
+	
+      if (deltaRM1<bestMatchHLTM1_dR){
+	bestMatchHLTM1_eta  = obj.eta(); 
+	bestMatchHLTM1_phi  = obj.phi(); 
+	bestMatchHLTM1_pt   = obj.pt();    
+	bestMatchHLTM1_dR   = deltaRM1;
+      }
+      if (deltaRM2<bestMatchHLTM2_dR){
+	bestMatchHLTM2_eta  = obj.eta(); 
+	bestMatchHLTM2_phi  = obj.phi(); 
+	bestMatchHLTM2_pt   = obj.pt(); 
+	bestMatchHLTM2_dR   = deltaRM2;
+      }
+    }
+  
+  } // Loop over trigger object
+
+  
   // Infos about JPsi candidate
   Jpsi_m1_pt   = muoncollection[mcidx_m1].pt();
   Jpsi_m1_eta  = muoncollection[mcidx_m1].eta();
@@ -558,6 +580,10 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
   Jpsi_m1_bestL1eta  = bestMatchM1_eta;
   Jpsi_m1_bestL1phi  = bestMatchM1_phi;
   Jpsi_m1_bestL1dR   = bestMatchM1_dR;  
+  Jpsi_m1_bestHLTpt  = bestMatchHLTM1_pt;
+  Jpsi_m1_bestHLTeta = bestMatchHLTM1_eta;
+  Jpsi_m1_bestHLTphi = bestMatchHLTM1_phi;
+  Jpsi_m1_bestHLTdR  = bestMatchHLTM1_dR;  
 
   Jpsi_m2_pt   = muoncollection[mcidx_m2].pt();
   Jpsi_m2_eta  = muoncollection[mcidx_m2].eta();
@@ -572,6 +598,10 @@ void NanoAnalyzerDoubleMu_L1::analyze(const edm::Event& iEvent, const edm::Event
   Jpsi_m2_bestL1eta = bestMatchM2_eta;
   Jpsi_m2_bestL1phi = bestMatchM2_phi;
   Jpsi_m2_bestL1dR  = bestMatchM2_dR;  
+  Jpsi_m2_bestHLTpt  = bestMatchHLTM2_pt;
+  Jpsi_m2_bestHLTeta = bestMatchHLTM2_eta;
+  Jpsi_m2_bestHLTphi = bestMatchHLTM2_phi;
+  Jpsi_m2_bestHLTdR  = bestMatchHLTM2_dR;  
   
   if (mcidx_trgobj1>=0) {
     
@@ -644,7 +674,11 @@ void NanoAnalyzerDoubleMu_L1::createBranch() {
   tree_->Branch("Jpsi_m1_bestL1eta" , &Jpsi_m1_bestL1eta  );
   tree_->Branch("Jpsi_m1_bestL1phi" , &Jpsi_m1_bestL1phi  );
   tree_->Branch("Jpsi_m1_bestL1dR",   &Jpsi_m1_bestL1dR );
-
+  tree_->Branch("Jpsi_m1_bestHLTpt",  &Jpsi_m1_bestHLTpt   );
+  tree_->Branch("Jpsi_m1_bestHLTeta", &Jpsi_m1_bestHLTeta  );
+  tree_->Branch("Jpsi_m1_bestHLTphi", &Jpsi_m1_bestHLTphi  );
+  tree_->Branch("Jpsi_m1_bestHLTdR",  &Jpsi_m1_bestHLTdR );
+  
   tree_->Branch("Jpsi_m2_pt", &Jpsi_m2_pt );
   tree_->Branch("Jpsi_m2_eta", &Jpsi_m2_eta );
   tree_->Branch("Jpsi_m2_abseta", &Jpsi_m2_abseta );
@@ -658,6 +692,10 @@ void NanoAnalyzerDoubleMu_L1::createBranch() {
   tree_->Branch("Jpsi_m2_bestL1eta" , &Jpsi_m2_bestL1eta );
   tree_->Branch("Jpsi_m2_bestL1phi" , &Jpsi_m2_bestL1phi );
   tree_->Branch("Jpsi_m2_bestL1dR" ,  &Jpsi_m2_bestL1dR );
+  tree_->Branch("Jpsi_m2_bestHLTpt",  &Jpsi_m2_bestHLTpt   );
+  tree_->Branch("Jpsi_m2_bestHLTeta", &Jpsi_m2_bestHLTeta  );
+  tree_->Branch("Jpsi_m2_bestHLTphi", &Jpsi_m2_bestHLTphi  );
+  tree_->Branch("Jpsi_m2_bestHLTdR",  &Jpsi_m2_bestHLTdR );
 
   // Analysis double-mu trigger
   tree_->Branch("probePathFired", &probePathFired );
@@ -707,6 +745,10 @@ void NanoAnalyzerDoubleMu_L1::reset(void){
   Jpsi_m1_bestL1eta = -99;
   Jpsi_m1_bestL1phi = -99;
   Jpsi_m1_bestL1dR = -99;
+  Jpsi_m1_bestHLTpt  = -99;
+  Jpsi_m1_bestHLTeta = -99;
+  Jpsi_m1_bestHLTphi = -99;
+  Jpsi_m1_bestHLTdR  = -99;
 
   Jpsi_m2_pt = -99;
   Jpsi_m2_eta = -99;
@@ -721,6 +763,10 @@ void NanoAnalyzerDoubleMu_L1::reset(void){
   Jpsi_m2_bestL1eta = -99;
   Jpsi_m2_bestL1phi = -99;
   Jpsi_m2_bestL1dR = -99;
+  Jpsi_m2_bestHLTpt  = -99;
+  Jpsi_m2_bestHLTeta = -99;
+  Jpsi_m2_bestHLTphi = -99;
+  Jpsi_m2_bestHLTdR  = -99;
 
   Jpsi_m1_trgobj_pt   = -99;
   Jpsi_m1_trgobj_eta  = -99;
